@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+
+  monolith:
+    build: ./monolith
+
+  standings-service:
+    build: ./standings-service
+
+  public-service:
+    build: ./public-service
+
+  gateway:
+    build: ./gateway
+
+  frontend:
+    build: ./frontend
