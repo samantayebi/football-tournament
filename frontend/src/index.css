@@ -1,0 +1,179 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f4f6f9;
+  color: #1a1a2e;
+}
+
+/* ── Navigation ── */
+nav {
+  background: #1a1a2e;
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-left, .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+nav a {
+  color: #ccd6f6;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+}
+
+nav a.active { color: #fff; border-color: #4a9eff; }
+nav a:hover  { color: #fff; }
+
+nav button {
+  background: transparent;
+  border: 1px solid #ccd6f6;
+  color: #ccd6f6;
+  padding: 5px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+nav button:hover { background: rgba(255,255,255,0.08); }
+
+/* ── Page container ── */
+main { padding: 0 16px; }
+
+.page {
+  max-width: 960px;
+  margin: 32px auto;
+}
+
+h1 { font-size: 24px; margin: 0 0 24px; }
+h2 { font-size: 18px; margin: 28px 0 14px; }
+section { margin-bottom: 36px; }
+
+/* ── Forms ── */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+}
+
+input {
+  padding: 9px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  width: 100%;
+}
+
+input:focus { outline: none; border-color: #4a9eff; box-shadow: 0 0 0 3px rgba(74,158,255,0.15); }
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 18px;
+  background: #1a1a2e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+button:hover   { background: #2d2d50; }
+button.danger  { background: #c0392b; }
+button.success { background: #27ae60; }
+button.sm      { padding: 5px 12px; font-size: 12px; }
+
+.error { color: #c0392b; font-size: 14px; margin: 4px 0; }
+
+/* ── Tables ── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+th, td {
+  padding: 11px 16px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+th { background: #f0f2f5; font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafbfc; }
+
+.actions { display: flex; gap: 8px; }
+
+/* ── Bracket ── */
+.bracket {
+  display: flex;
+  gap: 32px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+}
+
+.round { min-width: 210px; }
+
+.match-card {
+  background: #fff;
+  border: 1px solid #dde2ec;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.team-row { padding: 3px 0; font-size: 14px; }
+.winner   { font-weight: 700; color: #27ae60; }
+.vs       { color: #aaa; font-size: 11px; text-align: center; margin: 2px 0; }
+.score    { font-weight: 700; margin-top: 8px; font-size: 15px; }
+.venue,
+.date     { font-size: 12px; color: #777; margin-top: 3px; }
+
+.schedule-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.schedule-form input { flex: 1; min-width: 130px; width: auto; }
+
+/* ── Score inputs ── */
+.score-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.score-inputs input { width: 56px; text-align: center; }
+
+/* ── Report ── */
+.report-card {
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  line-height: 1.6;
+}
+
+.report-card small { color: #888; display: block; margin-top: 12px; }
