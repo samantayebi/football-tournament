@@ -67,7 +67,16 @@ services:
     restart: unless-stopped
 
   gateway:
-    build: ./gateway
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - monolith
+      - standings-service
+      - public-service
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
