@@ -1,4 +1,5 @@
 const pool = require('../../db');
+const { determineWinner } = require('../../utils/resultUtils');
 
 async function getMatchById(id) {
   const { rows } = await pool.query('SELECT * FROM matches WHERE id = $1', [id]);
@@ -31,7 +32,7 @@ async function setMatchResult(id, score_team1, score_team2) {
   const match = await getMatchById(id);
   if (!match) return null;
 
-  const winner_id = score_team1 >= score_team2 ? match.team1_id : match.team2_id;
+  const winner_id = determineWinner(match, score_team1, score_team2);
 
   const { rows } = await pool.query(
     `UPDATE matches

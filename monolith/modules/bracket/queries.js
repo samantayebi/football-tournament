@@ -1,4 +1,5 @@
 const pool = require('../../db');
+const { buildBracketPlan } = require('../../utils/bracketUtils');
 
 async function getApprovedTeams(tournament_id) {
   const { rows } = await pool.query(
@@ -58,25 +59,10 @@ async function generateBracket(tournament_id) {
 
   await clearTournamentMatches(tournament_id);
 
-  // Round 1: pair consecutive shuffled teams
-  const round1 = [];
-  for (let i = 0; i < teams.length; i += 2) {
-    const t2id = teams[i + 1]?.id ?? null; // null = bye
-    const match = await insertMatch(tournament_id, 1, teams[i].id, t2id);
-    round1.push(match);
-  }
-
-  // Pre-create placeholder matches for all subsequent rounds
-  const allMatches = [...round1];
-  let prevCount = round1.length;
-  let round = 2;
-  while (prevCount > 1) {
-    const nextCount = Math.ceil(prevCount / 2);
-    for (let i = 0; i < nextCount; i++) {
-      allMatches.push(await insertMatch(tournament_id, round, null, null));
-    }
-    prevCount = nextCount;
-    round++;
+  const plan = buildBracketPlan(teams);
+  const allMatches = [];
+  for (const { round, team1_id, team2_id } of plan) {
+    allMatches.push(await insertMatch(tournament_id, round, team1_id, team2_id));
   }
 
   return allMatches;
