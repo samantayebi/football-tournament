@@ -17,6 +17,36 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   monolith:
     build: ./monolith
     ports:
@@ -29,8 +59,11 @@ services:
       DB_PORT:           5432
       JWT_SECRET:        ${JWT_SECRET}
       MONOLITH_PORT:     ${MONOLITH_PORT}
+      RABBITMQ_URL:      ${RABBITMQ_URL}
     depends_on:
       db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   standings-service:
@@ -44,8 +77,11 @@ services:
       DB_HOST:           db
       DB_PORT:           5432
       STANDINGS_PORT:    ${STANDINGS_PORT}
+      RABBITMQ_URL:      ${RABBITMQ_URL}
     depends_on:
       db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     restart: unless-stopped
 
@@ -61,8 +97,23 @@ services:
       DB_PORT:           5432
       PUBLIC_PORT:       ${PUBLIC_PORT}
       STANDINGS_URL:     http://standings-service:3001
+      REDIS_URL:         ${REDIS_URL}
+      RABBITMQ_URL:      ${RABBITMQ_URL}
     depends_on:
       db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  notification-service:
+    build: ./notification-service
+    environment:
+      RABBITMQ_URL: ${RABBITMQ_URL}
+    depends_on:
+      rabbitmq:
         condition: service_healthy
     restart: unless-stopped
 
@@ -83,3 +134,5 @@ services:
 
 volumes:
   postgres_data:
+  rabbitmq_data:
+  redis_data:

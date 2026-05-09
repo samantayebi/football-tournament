@@ -1,5 +1,6 @@
 const pool = require('../../db');
 const { determineWinner } = require('../../utils/resultUtils');
+const { publishEvent } = require('../../utils/eventPublisher');
 
 async function getMatchById(id) {
   const { rows } = await pool.query('SELECT * FROM matches WHERE id = $1', [id]);
@@ -43,6 +44,14 @@ async function setMatchResult(id, score_team1, score_team2) {
   const updated = rows[0];
 
   await advanceWinner(updated);
+
+  await publishEvent('match.completed', {
+    matchId:      updated.id,
+    score_team1:  updated.score_team1,
+    score_team2:  updated.score_team2,
+    winner_id:    updated.winner_id,
+    tournament_id: updated.tournament_id,
+  });
 
   return updated;
 }

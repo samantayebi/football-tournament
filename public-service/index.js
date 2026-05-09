@@ -3,6 +3,8 @@ const express = require('express');
 const cors    = require('cors');
 const { Pool } = require('pg');
 const axios   = require('axios');
+const Redis   = require('ioredis');
+const amqp    = require('amqplib');
 
 const app  = express();
 app.use(cors());
@@ -16,8 +18,19 @@ const pool = new Pool({
   port:     parseInt(process.env.DB_PORT || '5432', 10),
 });
 
+const redis = new Redis(process.env.REDIS_URL || 'redis://redis:6379');
+
+const CACHE_TTL = 60;
+
 app.get('/public/bracket', async (req, res) => {
   try {
+    const cached = await redis.get('bracket');
+    if (cached) {
+      console.log('[CACHE HIT] bracket');
+      return res.json(JSON.parse(cached));
+    }
+
+    console.log('[CACHE MISS] bracket');
     const { rows } = await pool.query(`
       SELECT m.*,
              t1.name AS team1_name,
@@ -37,6 +50,7 @@ app.get('/public/bracket', async (req, res) => {
       return acc;
     }, {});
 
+    await redis.set('bracket', JSON.stringify(bracket), 'EX', CACHE_TTL);
     res.json(bracket);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -45,7 +59,15 @@ app.get('/public/bracket', async (req, res) => {
 
 app.get('/public/standings', async (req, res) => {
   try {
+    const cached = await redis.get('standings');
+    if (cached) {
+      console.log('[CACHE HIT] standings');
+      return res.json(JSON.parse(cached));
+    }
+
+    console.log('[CACHE MISS] standings');
     const { data } = await axios.get(`${process.env.STANDINGS_URL}/standings`);
+    await redis.set('standings', JSON.stringify(data), 'EX', CACHE_TTL);
     res.json(data);
   } catch (err) {
     res.status(502).json({ error: 'Failed to reach standings service' });
@@ -54,3 +76,37 @@ app.get('/public/standings', async (req, res) => {
 
 const PORT = process.env.PUBLIC_PORT || 3002;
 app.listen(PORT, () => console.log(`Public service listening on port ${PORT}`));
+
+const EXCHANGE = 'tournament_events';
+const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq:5672';
+
+async function connectRabbitMQ() {
+  let conn;
+  while (!conn) {
+    try {
+      conn = await amqp.connect(RABBITMQ_URL);
+    } catch {
+      console.log('[PUBLIC] Waiting for RabbitMQ...');
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+
+  const ch = await conn.createChannel();
+  await ch.assertExchange(EXCHANGE, 'fanout', { durable: true });
+  const { queue } = await ch.assertQueue('', { exclusive: true });
+  await ch.bindQueue(queue, EXCHANGE, '');
+
+  console.log('[PUBLIC] Listening for cache invalidation events...');
+
+  ch.consume(queue, async (msg) => {
+    if (!msg) return;
+    const { event } = JSON.parse(msg.content.toString());
+    if (event === 'match.completed') {
+      await redis.del('bracket', 'standings');
+      console.log('[CACHE INVALIDATED] bracket, standings');
+    }
+    ch.ack(msg);
+  });
+}
+
+connectRabbitMQ().catch(console.error);

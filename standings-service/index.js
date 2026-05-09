@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
 const { Pool } = require('pg');
+const amqp    = require('amqplib');
 
 const app  = express();
 app.use(cors());
@@ -57,3 +58,36 @@ app.get('/standings', async (req, res) => {
 
 const PORT = process.env.STANDINGS_PORT || 3001;
 app.listen(PORT, () => console.log(`Standings service listening on port ${PORT}`));
+
+const EXCHANGE = 'tournament_events';
+const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq:5672';
+
+async function connectRabbitMQ() {
+  let conn;
+  while (!conn) {
+    try {
+      conn = await amqp.connect(RABBITMQ_URL);
+    } catch {
+      console.log('[STANDINGS] Waiting for RabbitMQ...');
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+
+  const ch = await conn.createChannel();
+  await ch.assertExchange(EXCHANGE, 'fanout', { durable: true });
+  const { queue } = await ch.assertQueue('', { exclusive: true });
+  await ch.bindQueue(queue, EXCHANGE, '');
+
+  console.log('[STANDINGS] Listening for events...');
+
+  ch.consume(queue, (msg) => {
+    if (!msg) return;
+    const { event, matchId } = JSON.parse(msg.content.toString());
+    if (event === 'match.completed') {
+      console.log(`[STANDINGS] Recalculating standings after match ${matchId}`);
+    }
+    ch.ack(msg);
+  });
+}
+
+connectRabbitMQ().catch(console.error);
