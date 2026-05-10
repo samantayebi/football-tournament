@@ -20,7 +20,30 @@ const pool = new Pool({
 
 const redis = new Redis(process.env.REDIS_URL || 'redis://redis:6379');
 
+let rabbitChannel = null;
+
 const CACHE_TTL = 60;
+
+app.get('/health', async (req, res) => {
+  const deps = { db: 'ok', redis: 'ok', rabbitmq: 'ok' };
+
+  try {
+    await pool.query('SELECT 1');
+  } catch {
+    deps.db = 'error';
+  }
+
+  try {
+    await redis.ping();
+  } catch {
+    deps.redis = 'error';
+  }
+
+  if (!rabbitChannel) deps.rabbitmq = 'error';
+
+  const status = Object.values(deps).every(v => v === 'ok') ? 'ok' : 'degraded';
+  res.status(status === 'ok' ? 200 : 503).json({ status, uptime: process.uptime(), dependencies: deps });
+});
 
 app.get('/public/bracket', async (req, res) => {
   try {
@@ -91,21 +114,21 @@ async function connectRabbitMQ() {
     }
   }
 
-  const ch = await conn.createChannel();
-  await ch.assertExchange(EXCHANGE, 'fanout', { durable: true });
-  const { queue } = await ch.assertQueue('', { exclusive: true });
-  await ch.bindQueue(queue, EXCHANGE, '');
+  rabbitChannel = await conn.createChannel();
+  await rabbitChannel.assertExchange(EXCHANGE, 'fanout', { durable: true });
+  const { queue } = await rabbitChannel.assertQueue('', { exclusive: true });
+  await rabbitChannel.bindQueue(queue, EXCHANGE, '');
 
   console.log('[PUBLIC] Listening for cache invalidation events...');
 
-  ch.consume(queue, async (msg) => {
+  rabbitChannel.consume(queue, async (msg) => {
     if (!msg) return;
     const { event } = JSON.parse(msg.content.toString());
     if (event === 'match.completed') {
       await redis.del('bracket', 'standings');
       console.log('[CACHE INVALIDATED] bracket, standings');
     }
-    ch.ack(msg);
+    rabbitChannel.ack(msg);
   });
 }
 

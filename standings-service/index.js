@@ -16,6 +16,23 @@ const pool = new Pool({
   port:     parseInt(process.env.DB_PORT || '5432', 10),
 });
 
+let rabbitChannel = null;
+
+app.get('/health', async (req, res) => {
+  const deps = { db: 'ok', rabbitmq: 'ok' };
+
+  try {
+    await pool.query('SELECT 1');
+  } catch {
+    deps.db = 'error';
+  }
+
+  if (!rabbitChannel) deps.rabbitmq = 'error';
+
+  const status = Object.values(deps).every(v => v === 'ok') ? 'ok' : 'degraded';
+  res.status(status === 'ok' ? 200 : 503).json({ status, uptime: process.uptime(), dependencies: deps });
+});
+
 app.get('/standings', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -73,20 +90,20 @@ async function connectRabbitMQ() {
     }
   }
 
-  const ch = await conn.createChannel();
-  await ch.assertExchange(EXCHANGE, 'fanout', { durable: true });
-  const { queue } = await ch.assertQueue('', { exclusive: true });
-  await ch.bindQueue(queue, EXCHANGE, '');
+  rabbitChannel = await conn.createChannel();
+  await rabbitChannel.assertExchange(EXCHANGE, 'fanout', { durable: true });
+  const { queue } = await rabbitChannel.assertQueue('', { exclusive: true });
+  await rabbitChannel.bindQueue(queue, EXCHANGE, '');
 
   console.log('[STANDINGS] Listening for events...');
 
-  ch.consume(queue, (msg) => {
+  rabbitChannel.consume(queue, (msg) => {
     if (!msg) return;
     const { event, matchId } = JSON.parse(msg.content.toString());
     if (event === 'match.completed') {
       console.log(`[STANDINGS] Recalculating standings after match ${matchId}`);
     }
-    ch.ack(msg);
+    rabbitChannel.ack(msg);
   });
 }
 

@@ -1,8 +1,22 @@
 require('dotenv').config();
-const amqp = require('amqplib');
+const express = require('express');
+const amqp    = require('amqplib');
 
 const EXCHANGE = 'tournament_events';
 const URL = process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq:5672';
+
+let rabbitChannel = null;
+
+const app = express();
+
+app.get('/health', (req, res) => {
+  const deps = { rabbitmq: rabbitChannel ? 'ok' : 'error' };
+  const status = deps.rabbitmq === 'ok' ? 'ok' : 'degraded';
+  res.status(status === 'ok' ? 200 : 503).json({ status, uptime: process.uptime(), dependencies: deps });
+});
+
+const HEALTH_PORT = 3003;
+app.listen(HEALTH_PORT, () => console.log(`Notification service health endpoint on port ${HEALTH_PORT}`));
 
 async function start() {
   let conn;
@@ -15,19 +29,19 @@ async function start() {
     }
   }
 
-  const ch = await conn.createChannel();
-  await ch.assertExchange(EXCHANGE, 'fanout', { durable: true });
-  const { queue } = await ch.assertQueue('', { exclusive: true });
-  await ch.bindQueue(queue, EXCHANGE, '');
+  rabbitChannel = await conn.createChannel();
+  await rabbitChannel.assertExchange(EXCHANGE, 'fanout', { durable: true });
+  const { queue } = await rabbitChannel.assertQueue('', { exclusive: true });
+  await rabbitChannel.bindQueue(queue, EXCHANGE, '');
 
   console.log('[NOTIFICATION] Listening for events...');
 
-  ch.consume(queue, (msg) => {
+  rabbitChannel.consume(queue, (msg) => {
     if (!msg) return;
     const data = JSON.parse(msg.content.toString());
     const { event, matchId, winner_id } = data;
     console.log(`[NOTIFICATION] Event received: ${event} - Match ${matchId} won by team ${winner_id}`);
-    ch.ack(msg);
+    rabbitChannel.ack(msg);
   });
 }
 

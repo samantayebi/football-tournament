@@ -29,4 +29,4 @@ async function publishEvent(eventName, payload) {
   }
 }
 
-module.exports = { publishEvent };
+module.exports = { publishEvent, isConnected: () => channel !== null };

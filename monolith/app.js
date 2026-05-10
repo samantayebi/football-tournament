@@ -3,6 +3,8 @@ const express = require('express');
 const cors    = require('cors');
 const jwt     = require('jsonwebtoken');
 
+const pool       = require('./db');
+const { isConnected: rabbitConnected } = require('./utils/eventPublisher');
 const auth       = require('./middleware/auth');
 const enrollment = require('./modules/enrollment');
 const bracket    = require('./modules/bracket');
@@ -13,6 +15,21 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+app.get('/health', async (req, res) => {
+  const deps = { db: 'ok', rabbitmq: 'ok' };
+
+  try {
+    await pool.query('SELECT 1');
+  } catch {
+    deps.db = 'error';
+  }
+
+  if (!rabbitConnected()) deps.rabbitmq = 'error';
+
+  const status = Object.values(deps).every(v => v === 'ok') ? 'ok' : 'degraded';
+  res.status(status === 'ok' ? 200 : 503).json({ status, uptime: process.uptime(), dependencies: deps });
+});
 
 const ADMIN = { username: 'admin', password: 'admin123' };
 
