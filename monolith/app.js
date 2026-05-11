@@ -33,7 +33,7 @@ app.get('/health', async (req, res) => {
 
 const ADMIN = { username: 'admin', password: 'admin123' };
 
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/v1/admin/login', (req, res) => {
   const { username, password } = req.body;
   if (username !== ADMIN.username || password !== ADMIN.password) {
     return res.status(401).json({ error: 'Invalid credentials' });
@@ -42,9 +42,9 @@ app.post('/api/admin/login', (req, res) => {
   res.json({ token });
 });
 
-app.use('/api/admin', auth, enrollment);
-app.use('/api/admin', auth, bracket);
-app.use('/api/admin', auth, results);
-app.use('/api/admin', auth, reports);
+app.use('/api/v1/admin', auth, enrollment);
+app.use('/api/v1/admin', auth, bracket);
+app.use('/api/v1/admin', auth, results);
+app.use('/api/v1/admin', auth, reports);
 
 module.exports = app;

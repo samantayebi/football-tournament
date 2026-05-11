@@ -33,7 +33,7 @@ app.get('/health', async (req, res) => {
   res.status(status === 'ok' ? 200 : 503).json({ status, uptime: process.uptime(), dependencies: deps });
 });
 
-app.get('/standings', async (req, res) => {
+app.get('/api/v1/standings', async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT

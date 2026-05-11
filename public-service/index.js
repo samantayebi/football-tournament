@@ -45,7 +45,7 @@ app.get('/health', async (req, res) => {
   res.status(status === 'ok' ? 200 : 503).json({ status, uptime: process.uptime(), dependencies: deps });
 });
 
-app.get('/public/bracket', async (req, res) => {
+app.get('/api/v1/public/bracket', async (req, res) => {
   try {
     const cached = await redis.get('bracket');
     if (cached) {
@@ -80,7 +80,7 @@ app.get('/public/bracket', async (req, res) => {
   }
 });
 
-app.get('/public/standings', async (req, res) => {
+app.get('/api/v1/public/standings', async (req, res) => {
   try {
     const cached = await redis.get('standings');
     if (cached) {
@@ -89,7 +89,7 @@ app.get('/public/standings', async (req, res) => {
     }
 
     console.log('[CACHE MISS] standings');
-    const { data } = await axios.get(`${process.env.STANDINGS_URL}/standings`);
+    const { data } = await axios.get(`${process.env.STANDINGS_URL}/api/v1/standings`);
     await redis.set('standings', JSON.stringify(data), 'EX', CACHE_TTL);
     res.json(data);
   } catch (err) {
