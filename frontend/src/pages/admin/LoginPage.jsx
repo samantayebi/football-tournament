@@ -13,7 +13,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     try {
-      const { data } = await api.post('/api/admin/login', form);
+      const { data } = await api.post('/api/v1/admin/login', form);
       login(data.token);
       navigate('/admin/enrollment');
     } catch {

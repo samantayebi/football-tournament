@@ -11,14 +11,14 @@ export default function EnrollmentPage() {
   const [form, setForm]     = useState({ name: '', contact_email: '', players: '' });
 
   const fetchTeams = () =>
-    api.get('/api/admin/enrollment', { headers: authHeader })
+    api.get('/api/v1/admin/enrollment', { headers: authHeader })
        .then(r => setTeams(r.data))
        .catch(() => setError('Failed to load teams'));
 
   useEffect(() => { fetchTeams(); }, []);
 
   async function handleStatusChange(id, status) {
-    await api.patch(`/api/admin/enrollment/${id}`, { status }, { headers: authHeader });
+    await api.patch(`/api/v1/admin/enrollment/${id}`, { status }, { headers: authHeader });
     fetchTeams();
   }
 
@@ -30,7 +30,7 @@ export default function EnrollmentPage() {
       .map((name, i) => ({ name: name.trim(), shirt_number: i + 1 }))
       .filter(p => p.name);
     try {
-      await api.post('/api/admin/enrollment',
+      await api.post('/api/v1/admin/enrollment',
         { name: form.name, contact_email: form.contact_email, players },
         { headers: authHeader }
       );

@@ -11,7 +11,7 @@ export default function ResultEntryPage() {
   const [error, setError]     = useState('');
 
   const fetchMatches = () =>
-    api.get('/api/admin/bracket', { headers: authHeader })
+    api.get('/api/v1/admin/bracket', { headers: authHeader })
        .then(r => setMatches(r.data))
        .catch(() => setError('Failed to load matches'));
 
@@ -25,7 +25,7 @@ export default function ResultEntryPage() {
     const { score_team1, score_team2 } = scores[matchId] || {};
     try {
       await api.patch(
-        `/api/admin/matches/${matchId}/result`,
+        `/api/v1/admin/matches/${matchId}/result`,
         { score_team1: Number(score_team1), score_team2: Number(score_team2) },
         { headers: authHeader }
       );

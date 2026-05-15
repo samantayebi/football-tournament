@@ -6,7 +6,7 @@ export default function StandingsPage() {
   const [error, setError]         = useState('');
 
   useEffect(() => {
-    api.get('/api/public/standings')
+    api.get('/api/v1/public/standings')
       .then(r => setStandings(r.data))
       .catch(() => setError('Failed to load standings'));
   }, []);

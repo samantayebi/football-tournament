@@ -8,7 +8,7 @@ export default function ReportPage() {
   const [error, setError]   = useState('');
 
   useEffect(() => {
-    api.get(`/api/admin/reports/${matchId}`)
+    api.get(`/api/v1/admin/reports/${matchId}`)
       .then(r => setReport(r.data))
       .catch(() => setError('Report not found for this match.'));
   }, [matchId]);

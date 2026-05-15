@@ -20,7 +20,7 @@ export default function BracketAdminPage() {
   const [error, setError]               = useState('');
 
   const fetchBracket = () =>
-    api.get('/api/admin/bracket', { headers: authHeader })
+    api.get('/api/v1/admin/bracket', { headers: authHeader })
        .then(r => setBracket(groupByRound(r.data)))
        .catch(() => setError('Failed to load bracket'));
 
@@ -29,7 +29,7 @@ export default function BracketAdminPage() {
   async function handleGenerate() {
     setError('');
     try {
-      await api.post('/api/admin/bracket/generate', {}, { headers: authHeader });
+      await api.post('/api/v1/admin/bracket/generate', {}, { headers: authHeader });
       setScheduleForm({});
       fetchBracket();
     } catch (err) {
@@ -40,7 +40,7 @@ export default function BracketAdminPage() {
   async function handleSchedule(matchId) {
     const form = scheduleForm[matchId] || {};
     try {
-      await api.patch(`/api/admin/matches/${matchId}/schedule`, form, { headers: authHeader });
+      await api.patch(`/api/v1/admin/matches/${matchId}/schedule`, form, { headers: authHeader });
       fetchBracket();
     } catch {
       setError('Failed to save schedule');

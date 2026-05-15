@@ -6,7 +6,7 @@ export default function BracketPage() {
   const [error, setError]     = useState('');
 
   useEffect(() => {
-    api.get('/api/public/bracket')
+    api.get('/api/v1/public/bracket')
       .then(r => setBracket(r.data))
       .catch(() => setError('Failed to load bracket'));
   }, []);
