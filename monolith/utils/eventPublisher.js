@@ -1,4 +1,5 @@
-const amqp = require('amqplib');
+const amqp   = require('amqplib');
+const logger = require('./logger');
 
 const EXCHANGE = 'tournament_events';
 const URL = process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq:5672';
@@ -10,9 +11,9 @@ async function connect() {
     const conn = await amqp.connect(URL);
     channel = await conn.createChannel();
     await channel.assertExchange(EXCHANGE, 'fanout', { durable: true });
-    console.log('[EventPublisher] Connected to RabbitMQ');
+    logger.info('rabbitmq connected');
   } catch (err) {
-    console.error('[EventPublisher] RabbitMQ unavailable, events will be skipped:', err.message);
+    logger.error('rabbitmq unavailable, events will be skipped', { error: err.message });
     channel = null;
   }
 }
@@ -24,8 +25,9 @@ async function publishEvent(eventName, payload) {
   try {
     const msg = JSON.stringify({ event: eventName, ...payload });
     channel.publish(EXCHANGE, '', Buffer.from(msg));
+    logger.info('event published', { event: eventName, payload });
   } catch (err) {
-    console.error('[EventPublisher] Failed to publish event:', err.message);
+    logger.error('rabbitmq publish failed', { error: err.message });
   }
 }
 

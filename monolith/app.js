@@ -4,6 +4,7 @@ const cors    = require('cors');
 const jwt     = require('jsonwebtoken');
 
 const pool       = require('./db');
+const logger     = require('./utils/logger');
 const { isConnected: rabbitConnected } = require('./utils/eventPublisher');
 const auth       = require('./middleware/auth');
 const enrollment = require('./modules/enrollment');
@@ -15,6 +16,10 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use((req, _res, next) => {
+  logger.info('incoming request', { method: req.method, url: req.url, ip: req.ip });
+  next();
+});
 
 app.get('/health', async (req, res) => {
   const deps = { db: 'ok', rabbitmq: 'ok' };
