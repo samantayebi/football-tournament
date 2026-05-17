@@ -5,6 +5,8 @@ const jwt     = require('jsonwebtoken');
 
 const pool       = require('./db');
 const logger     = require('./utils/logger');
+const { register } = require('./utils/metrics');
+const metricsMiddleware = require('./middleware/metricsMiddleware');
 const { isConnected: rabbitConnected } = require('./utils/eventPublisher');
 const auth       = require('./middleware/auth');
 const enrollment = require('./modules/enrollment');
@@ -19,6 +21,12 @@ app.use(express.json());
 app.use((req, _res, next) => {
   logger.info('incoming request', { method: req.method, url: req.url, ip: req.ip });
   next();
+});
+app.use(metricsMiddleware);
+
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 app.get('/health', async (req, res) => {

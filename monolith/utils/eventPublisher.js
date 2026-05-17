@@ -1,5 +1,6 @@
 const amqp   = require('amqplib');
 const logger = require('./logger');
+const { eventsPublishedTotal } = require('./metrics');
 
 const EXCHANGE = 'tournament_events';
 const URL = process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq:5672';
@@ -25,6 +26,7 @@ async function publishEvent(eventName, payload) {
   try {
     const msg = JSON.stringify({ event: eventName, ...payload });
     channel.publish(EXCHANGE, '', Buffer.from(msg));
+    eventsPublishedTotal.inc({ event_name: eventName });
     logger.info('event published', { event: eventName, payload });
   } catch (err) {
     logger.error('rabbitmq publish failed', { error: err.message });

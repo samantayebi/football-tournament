@@ -1,5 +1,6 @@
 const pool   = require('../../db');
 const logger = require('../../utils/logger');
+const { matchResultsTotal } = require('../../utils/metrics');
 const { determineWinner } = require('../../utils/resultUtils');
 const { publishEvent }    = require('../../utils/eventPublisher');
 
@@ -54,6 +55,7 @@ async function setMatchResult(id, score_team1, score_team2) {
     tournament_id: updated.tournament_id,
   });
 
+  matchResultsTotal.inc({ tournament_id: updated.tournament_id });
   logger.info('match result saved', {
     matchId:     updated.id,
     score_team1: updated.score_team1,
