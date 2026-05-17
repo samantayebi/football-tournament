@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const amqp    = require('amqplib');
+const logger  = require('./logger');
 
 const EXCHANGE = 'tournament_events';
 const URL = process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq:5672';
@@ -16,7 +17,7 @@ app.get('/health', (req, res) => {
 });
 
 const HEALTH_PORT = 3003;
-app.listen(HEALTH_PORT, () => console.log(`Notification service health endpoint on port ${HEALTH_PORT}`));
+app.listen(HEALTH_PORT, () => logger.info('notification service health endpoint started', { port: HEALTH_PORT }));
 
 async function start() {
   let conn;
@@ -24,7 +25,7 @@ async function start() {
     try {
       conn = await amqp.connect(URL);
     } catch {
-      console.log('[NOTIFICATION] Waiting for RabbitMQ...');
+      logger.warn('waiting for rabbitmq', { retryIn: '3s' });
       await new Promise(r => setTimeout(r, 3000));
     }
   }
@@ -34,13 +35,13 @@ async function start() {
   const { queue } = await rabbitChannel.assertQueue('', { exclusive: true });
   await rabbitChannel.bindQueue(queue, EXCHANGE, '');
 
-  console.log('[NOTIFICATION] Listening for events...');
+  logger.info('listening for tournament events');
 
   rabbitChannel.consume(queue, (msg) => {
     if (!msg) return;
     const data = JSON.parse(msg.content.toString());
     const { event, matchId, winner_id } = data;
-    console.log(`[NOTIFICATION] Event received: ${event} - Match ${matchId} won by team ${winner_id}`);
+    logger.info('event received', { event, matchId, winner_id });
     rabbitChannel.ack(msg);
   });
 }
