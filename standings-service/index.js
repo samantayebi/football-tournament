@@ -3,10 +3,15 @@ const express = require('express');
 const cors    = require('cors');
 const { Pool } = require('pg');
 const amqp    = require('amqplib');
+const logger  = require('./logger');
 
 const app  = express();
 app.use(cors());
 app.use(express.json());
+app.use((req, _res, next) => {
+  logger.info('incoming request', { method: req.method, url: req.url, ip: req.ip });
+  next();
+});
 
 const pool = new Pool({
   user:     process.env.POSTGRES_USER,
@@ -74,7 +79,7 @@ app.get('/api/v1/standings', async (req, res) => {
 });
 
 const PORT = process.env.STANDINGS_PORT || 3001;
-app.listen(PORT, () => console.log(`Standings service listening on port ${PORT}`));
+app.listen(PORT, () => logger.info('standings service started', { port: PORT }));
 
 const EXCHANGE = 'tournament_events';
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://admin:password@rabbitmq:5672';
@@ -85,7 +90,7 @@ async function connectRabbitMQ() {
     try {
       conn = await amqp.connect(RABBITMQ_URL);
     } catch {
-      console.log('[STANDINGS] Waiting for RabbitMQ...');
+      logger.warn('waiting for rabbitmq', { retryIn: '3s' });
       await new Promise(r => setTimeout(r, 3000));
     }
   }
@@ -95,13 +100,14 @@ async function connectRabbitMQ() {
   const { queue } = await rabbitChannel.assertQueue('', { exclusive: true });
   await rabbitChannel.bindQueue(queue, EXCHANGE, '');
 
-  console.log('[STANDINGS] Listening for events...');
+  logger.info('rabbitmq connected');
+  logger.info('listening for tournament events');
 
   rabbitChannel.consume(queue, (msg) => {
     if (!msg) return;
     const { event, matchId } = JSON.parse(msg.content.toString());
     if (event === 'match.completed') {
-      console.log(`[STANDINGS] Recalculating standings after match ${matchId}`);
+      logger.info('standings recalculation triggered', { matchId });
     }
     rabbitChannel.ack(msg);
   });
