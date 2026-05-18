@@ -4,6 +4,8 @@ const cors    = require('cors');
 const { Pool } = require('pg');
 const amqp    = require('amqplib');
 const logger  = require('./logger');
+const { register, standingsQueriesTotal, rabbitmqEventsReceivedTotal } = require('./metrics');
+const metricsMiddleware = require('./metricsMiddleware');
 
 const app  = express();
 app.use(cors());
@@ -12,6 +14,7 @@ app.use((req, _res, next) => {
   logger.info('incoming request', { method: req.method, url: req.url, ip: req.ip });
   next();
 });
+app.use(metricsMiddleware);
 
 const pool = new Pool({
   user:     process.env.POSTGRES_USER,
@@ -22,6 +25,11 @@ const pool = new Pool({
 });
 
 let rabbitChannel = null;
+
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
 
 app.get('/health', async (req, res) => {
   const deps = { db: 'ok', rabbitmq: 'ok' };
@@ -72,6 +80,7 @@ app.get('/api/v1/standings', async (req, res) => {
       GROUP BY t.id, t.name
       ORDER BY wins DESC, goals_scored DESC
     `);
+    standingsQueriesTotal.inc();
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -107,6 +116,7 @@ async function connectRabbitMQ() {
     if (!msg) return;
     const { event, matchId } = JSON.parse(msg.content.toString());
     if (event === 'match.completed') {
+      rabbitmqEventsReceivedTotal.inc({ event_name: 'match.completed' });
       logger.info('standings recalculation triggered', { matchId });
     }
     rabbitChannel.ack(msg);

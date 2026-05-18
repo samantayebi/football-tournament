@@ -6,6 +6,8 @@ const axios   = require('axios');
 const Redis   = require('ioredis');
 const amqp    = require('amqplib');
 const logger  = require('./logger');
+const { register, cacheHitsTotal, cacheMissesTotal, cacheInvalidationsTotal, rabbitmqEventsReceivedTotal } = require('./metrics');
+const metricsMiddleware = require('./metricsMiddleware');
 
 const app  = express();
 app.use(cors());
@@ -14,6 +16,7 @@ app.use((req, _res, next) => {
   logger.info('incoming request', { method: req.method, url: req.url, ip: req.ip });
   next();
 });
+app.use(metricsMiddleware);
 
 const pool = new Pool({
   user:     process.env.POSTGRES_USER,
@@ -28,6 +31,11 @@ const redis = new Redis(process.env.REDIS_URL || 'redis://redis:6379');
 let rabbitChannel = null;
 
 const CACHE_TTL = 60;
+
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
 
 app.get('/health', async (req, res) => {
   const deps = { db: 'ok', redis: 'ok', rabbitmq: 'ok' };
@@ -54,10 +62,12 @@ app.get('/api/v1/public/bracket', async (req, res) => {
   try {
     const cached = await redis.get('bracket');
     if (cached) {
+      cacheHitsTotal.inc({ key: 'bracket' });
       logger.info('cache hit', { key: 'bracket' });
       return res.json(JSON.parse(cached));
     }
 
+    cacheMissesTotal.inc({ key: 'bracket' });
     logger.info('cache miss', { key: 'bracket' });
     const { rows } = await pool.query(`
       SELECT m.*,
@@ -89,10 +99,12 @@ app.get('/api/v1/public/standings', async (req, res) => {
   try {
     const cached = await redis.get('standings');
     if (cached) {
+      cacheHitsTotal.inc({ key: 'standings' });
       logger.info('cache hit', { key: 'standings' });
       return res.json(JSON.parse(cached));
     }
 
+    cacheMissesTotal.inc({ key: 'standings' });
     logger.info('cache miss', { key: 'standings' });
     const { data } = await axios.get(`${process.env.STANDINGS_URL}/api/v1/standings`);
     await redis.set('standings', JSON.stringify(data), 'EX', CACHE_TTL);
@@ -131,6 +143,8 @@ async function connectRabbitMQ() {
     const { event } = JSON.parse(msg.content.toString());
     if (event === 'match.completed') {
       await redis.del('bracket', 'standings');
+      cacheInvalidationsTotal.inc();
+      rabbitmqEventsReceivedTotal.inc({ event_name: 'match.completed' });
       logger.info('cache invalidated', { keys: ['bracket', 'standings'] });
     }
     rabbitChannel.ack(msg);
