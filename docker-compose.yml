@@ -134,8 +134,12 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin123
       GF_USERS_ALLOW_SIGN_UP: false
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/football.json
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana-datasource.json:/etc/grafana/provisioning/datasources/prometheus.json
+      - ./monitoring/grafana-dashboards-provider.yaml:/etc/grafana/provisioning/dashboards/provider.yaml
+      - ./monitoring/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/football.json
     depends_on:
       - prometheus
     restart: unless-stopped
