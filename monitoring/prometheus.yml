@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'monolith'
+    static_configs:
+      - targets: ['monolith:3000']
+    metrics_path: /metrics
+
+  - job_name: 'standings-service'
+    static_configs:
+      - targets: ['standings-service:3001']
+    metrics_path: /metrics
+
+  - job_name: 'public-service'
+    static_configs:
+      - targets: ['public-service:3002']
+    metrics_path: /metrics
