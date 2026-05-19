@@ -29,6 +29,7 @@ const pool = new Pool({
 const redis = new Redis(process.env.REDIS_URL || 'redis://redis:6379');
 
 let rabbitChannel = null;
+const sseClients  = new Set();
 
 const CACHE_TTL = 60;
 
@@ -114,6 +115,26 @@ app.get('/api/v1/public/standings', async (req, res) => {
   }
 });
 
+app.get('/api/v1/public/events', (req, res) => {
+  res.set({
+    'Content-Type':  'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection':    'keep-alive',
+  });
+  res.flushHeaders();
+  res.write(': ping\n\n');
+
+  const heartbeat = setInterval(() => res.write(': ping\n\n'), 30000);
+  sseClients.add(res);
+  logger.info('sse client connected', { total: sseClients.size });
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    sseClients.delete(res);
+    logger.info('sse client disconnected', { remaining: sseClients.size });
+  });
+});
+
 const PORT = process.env.PUBLIC_PORT || 3002;
 app.listen(PORT, () => logger.info('public service started', { port: PORT }));
 
@@ -146,6 +167,10 @@ async function connectRabbitMQ() {
       cacheInvalidationsTotal.inc();
       rabbitmqEventsReceivedTotal.inc({ event_name: 'match.completed' });
       logger.info('cache invalidated', { keys: ['bracket', 'standings'] });
+
+      const ssePayload = `data: ${JSON.stringify({ type: 'match.completed', timestamp: new Date().toISOString() })}\n\n`;
+      for (const client of sseClients) client.write(ssePayload);
+      logger.info('sse event broadcast', { event: 'match.completed', clients: sseClients.size });
     }
     rabbitChannel.ack(msg);
   });

@@ -1,19 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import api from '../../api';
 
 export default function StandingsPage() {
   const [standings, setStandings] = useState([]);
   const [error, setError]         = useState('');
+  const [live, setLive]           = useState(false);
 
-  useEffect(() => {
+  const fetchStandings = useCallback(() => {
     api.get('/api/v1/public/standings')
       .then(r => setStandings(r.data))
       .catch(() => setError('Failed to load standings'));
   }, []);
 
+  useEffect(() => { fetchStandings(); }, [fetchStandings]);
+
+  useEffect(() => {
+    const es = new EventSource('/api/v1/public/events');
+    es.onopen    = () => setLive(true);
+    es.onerror   = () => setLive(false);
+    es.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      if (data.type === 'match.completed') fetchStandings();
+    };
+    return () => es.close();
+  }, [fetchStandings]);
+
   return (
     <div className="page">
-      <h1>Standings</h1>
+      <h1>Standings {live && <span className="live-badge">LIVE</span>}</h1>
       {error && <p className="error">{error}</p>}
       <table>
         <thead>
