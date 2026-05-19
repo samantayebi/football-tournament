@@ -177,3 +177,15 @@ tr:hover td { background: #fafbfc; }
 }
 
 .report-card small { color: #888; display: block; margin-top: 12px; }
+
+/* ── SVG Bracket ── */
+.bracket-svg       { width: 100%; overflow-x: auto; }
+.bracket-container { overflow-x: auto; padding-bottom: 16px; }
+.match-card-winner { fill: #e8f5e9; stroke: #27ae60; }
+.match-card-normal { fill: #fff; stroke: #dde2ec; }
+.team-name         { font-family: system-ui; font-size: 13px; }
+.team-winner       { font-weight: bold; fill: #27ae60; }
+.team-loser        { fill: #aaa; }
+.team-tbd          { fill: #aaa; font-style: italic; }
+.connector         { stroke: #d3d1c7; stroke-width: 1.5; fill: none; }
+.round-label       { font-size: 11px; font-weight: 600; fill: #888; text-transform: uppercase; letter-spacing: 0.06em; }

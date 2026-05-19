@@ -1,50 +1,220 @@
 import { useEffect, useState } from 'react';
 import api from '../../api';
 
+const CW = 200;  // card width
+const CH = 72;   // card height
+const RG = 80;   // round gap (horizontal)
+const MG = 40;   // match gap (vertical within a round)
+const PT = 40;   // padding top
+const PL = 40;   // padding left
+const LH = 28;   // label row height
+
+function roundLabel(r, total) {
+  const fromEnd = total - 1 - r;
+  if (fromEnd === 0) return 'Final';
+  if (fromEnd === 1) return 'Semi-Final';
+  if (fromEnd === 2) return 'Quarter-Final';
+  return `Round ${r + 1}`;
+}
+
+// Returns yTop[r][i] — the top-y of each match card
+function buildPositions(rounds) {
+  const pos = [];
+  for (let r = 0; r < rounds.length; r++) {
+    pos[r] = [];
+    for (let i = 0; i < rounds[r].length; i++) {
+      if (r === 0) {
+        pos[r][i] = PT + LH + i * (CH + MG);
+      } else {
+        const p1y = pos[r - 1][i * 2];
+        const p2y = pos[r - 1][i * 2 + 1] ?? p1y;
+        pos[r][i] = (p1y + p2y) / 2 + CH / 2 - CH / 2;
+        // simplified: center of the two parent card centers
+        pos[r][i] = (p1y + CH / 2 + p2y + CH / 2) / 2 - CH / 2;
+      }
+    }
+  }
+  return pos;
+}
+
+function colX(r) {
+  return PL + r * (CW + RG);
+}
+
 export default function BracketPage() {
   const [bracket, setBracket] = useState({});
   const [error, setError]     = useState('');
+  const [updatedAt, setUpdatedAt] = useState(null);
 
   useEffect(() => {
     api.get('/api/v1/public/bracket')
-      .then(r => setBracket(r.data))
+      .then(r => { setBracket(r.data); setUpdatedAt(new Date()); })
       .catch(() => setError('Failed to load bracket'));
   }, []);
 
-  const rounds = Object.keys(bracket).sort(
-    (a, b) => parseInt(a.split('_')[1]) - parseInt(b.split('_')[1])
-  );
+  const keys   = Object.keys(bracket).sort((a, b) => +a.split('_')[1] - +b.split('_')[1]);
+  const rounds = keys.map(k => bracket[k]);
+  const numR   = rounds.length;
+
+  if (!numR) {
+    return (
+      <div className="page">
+        <h1>Tournament Bracket</h1>
+        {error ? <p className="error">{error}</p> : <p>No bracket generated yet.</p>}
+      </div>
+    );
+  }
+
+  const pos    = buildPositions(rounds);
+  const r1n    = rounds[0].length;
+  const final  = rounds[numR - 1][0];
+  const champion = final?.winner_id
+    ? (final.winner_id === final.team1_id ? final.team1_name : final.team2_name)
+    : null;
+
+  const champBoxX = colX(numR - 1) + CW + RG / 2;
+  const champCY   = pos[numR - 1][0] + CH / 2;
+
+  const svgW = PL + numR * CW + (numR - 1) * RG + (champion ? RG + 120 : 0) + PL;
+  const svgH = PT + LH + r1n * CH + (r1n - 1) * MG + 40 + PT;
 
   return (
     <div className="page">
       <h1>Tournament Bracket</h1>
       {error && <p className="error">{error}</p>}
-      <div className="bracket">
-        {rounds.map(round => (
-          <div key={round} className="round">
-            <h2>{round.replace('_', ' ').toUpperCase()}</h2>
-            {bracket[round].map(match => (
-              <div key={match.id} className="match-card">
-                <div className={`team-row ${match.winner_id === match.team1_id && match.winner_id ? 'winner' : ''}`}>
-                  {match.team1_name || 'TBD'}
-                </div>
-                <div className="vs">vs</div>
-                <div className={`team-row ${match.winner_id === match.team2_id && match.winner_id ? 'winner' : ''}`}>
-                  {match.team2_name || 'TBD'}
-                </div>
-                {match.score_team1 != null && (
-                  <div className="score">{match.score_team1} – {match.score_team2}</div>
-                )}
-                {match.venue    && <div className="venue">{match.venue}</div>}
-                {match.match_date && (
-                  <div className="date">{new Date(match.match_date).toLocaleString()}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
-        {rounds.length === 0 && !error && <p>No bracket generated yet.</p>}
+      <div className="bracket-container">
+        <svg
+          className="bracket-svg"
+          width={svgW}
+          height={svgH}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* ── Round labels ── */}
+          {rounds.map((_, r) => (
+            <text key={`lbl-${r}`}
+              x={colX(r) + CW / 2} y={PT + LH - 8}
+              textAnchor="middle" className="round-label"
+            >
+              {roundLabel(r, numR)}
+            </text>
+          ))}
+          {champion && (
+            <text x={champBoxX + 60} y={PT + LH - 8} textAnchor="middle" className="round-label">
+              Champion
+            </text>
+          )}
+
+          {/* ── Connector lines between rounds ── */}
+          {rounds.map((matches, r) =>
+            r === 0 ? null : matches.map((_, i) => {
+              const p1y = pos[r - 1][i * 2];
+              const p2y = pos[r - 1][i * 2 + 1];
+              const p1c = p1y + CH / 2;
+              const p2c = p2y != null ? p2y + CH / 2 : p1c;
+              const midX = colX(r) - RG / 2;
+              const cc   = pos[r][i] + CH / 2;
+              return (
+                <g key={`conn-${r}-${i}`}>
+                  <line className="connector" x1={colX(r - 1) + CW} y1={p1c} x2={midX} y2={p1c} />
+                  {p2y != null && <>
+                    <line className="connector" x1={colX(r - 1) + CW} y1={p2c} x2={midX} y2={p2c} />
+                    <line className="connector" x1={midX} y1={p1c} x2={midX} y2={p2c} />
+                  </>}
+                  <line className="connector" x1={midX} y1={cc} x2={colX(r)} y2={cc} />
+                </g>
+              );
+            })
+          )}
+
+          {/* ── Champion connector + box ── */}
+          {champion && (
+            <g>
+              <line className="connector"
+                x1={colX(numR - 1) + CW} y1={champCY}
+                x2={champBoxX} y2={champCY}
+              />
+              <rect x={champBoxX} y={champCY - 16} width={120} height={32} rx={6} fill="#27ae60" />
+              <text
+                x={champBoxX + 60} y={champCY}
+                textAnchor="middle" dominantBaseline="middle"
+                style={{ fontSize: 12, fontWeight: 700, fill: '#fff', fontFamily: 'system-ui' }}
+              >
+                {champion}
+              </text>
+            </g>
+          )}
+
+          {/* ── Match cards ── */}
+          {rounds.map((matches, r) =>
+            matches.map((m, i) => {
+              const x   = colX(r);
+              const y   = pos[r][i];
+              const won = m.winner_id != null;
+              const t1w = won && m.winner_id === m.team1_id;
+              const t2w = won && m.winner_id === m.team2_id;
+              const t1cls = !m.team1_name ? 'team-tbd' : t1w ? 'team-winner' : t2w ? 'team-loser' : '';
+              const t2cls = !m.team2_name ? 'team-tbd' : t2w ? 'team-winner' : t1w ? 'team-loser' : '';
+
+              return (
+                <g key={`match-${r}-${i}`}>
+                  {/* Card background */}
+                  <rect
+                    x={x} y={y} width={CW} height={CH} rx={6}
+                    className={won ? 'match-card-winner' : 'match-card-normal'}
+                    strokeWidth={1.5}
+                  />
+                  {/* Divider between team slots */}
+                  <line x1={x} y1={y + CH / 2} x2={x + CW} y2={y + CH / 2}
+                    stroke="#dde2ec" strokeWidth={1} />
+
+                  {/* Team 1 */}
+                  <text x={x + 12} y={y + CH / 4}
+                    dominantBaseline="middle" className={`team-name ${t1cls}`}>
+                    {m.team1_name || 'TBD'}
+                  </text>
+                  {/* Team 2 */}
+                  <text x={x + 12} y={y + (CH * 3) / 4}
+                    dominantBaseline="middle" className={`team-name ${t2cls}`}>
+                    {m.team2_name || 'TBD'}
+                  </text>
+
+                  {/* Scores (right-aligned) */}
+                  {m.score_team1 != null && <>
+                    <text x={x + CW - 12} y={y + CH / 4}
+                      textAnchor="end" dominantBaseline="middle"
+                      className={`team-name ${t1w ? 'team-winner' : 'team-loser'}`}>
+                      {m.score_team1}
+                    </text>
+                    <text x={x + CW - 12} y={y + (CH * 3) / 4}
+                      textAnchor="end" dominantBaseline="middle"
+                      className={`team-name ${t2w ? 'team-winner' : 'team-loser'}`}>
+                      {m.score_team2}
+                    </text>
+                  </>}
+
+                  {/* Date and venue below card */}
+                  {m.match_date && (
+                    <text x={x} y={y + CH + 14} className="round-label" style={{ fontSize: 10 }}>
+                      {new Date(m.match_date).toLocaleString()}
+                    </text>
+                  )}
+                  {m.venue && (
+                    <text x={x} y={y + CH + (m.match_date ? 26 : 14)}
+                      className="round-label" style={{ fontSize: 10 }}>
+                      {m.venue}
+                    </text>
+                  )}
+                </g>
+              );
+            })
+          )}
+        </svg>
       </div>
+      {updatedAt && (
+        <p style={{ fontSize: 12, color: '#888', marginTop: 8 }}>
+          Last updated: {updatedAt.toLocaleTimeString()}
+        </p>
+      )}
     </div>
   );
 }
