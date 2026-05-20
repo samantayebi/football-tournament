@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute   from './components/ProtectedRoute';
+import LandingPage      from './pages/public/LandingPage';
 import BracketPage      from './pages/public/BracketPage';
 import StandingsPage    from './pages/public/StandingsPage';
 import ReportPage       from './pages/public/ReportPage';
@@ -14,7 +15,8 @@ function Navbar() {
   return (
     <nav>
       <div className="nav-left">
-        <NavLink to="/">Bracket</NavLink>
+        <NavLink to="/">Home</NavLink>
+        <NavLink to="/bracket">Bracket</NavLink>
         <NavLink to="/standings">Standings</NavLink>
       </div>
       <div className="nav-right">
@@ -40,7 +42,8 @@ export default function App() {
         <Navbar />
         <main>
           <Routes>
-            <Route path="/"                 element={<BracketPage />} />
+            <Route path="/"                 element={<LandingPage />} />
+            <Route path="/bracket"          element={<BracketPage />} />
             <Route path="/standings"        element={<StandingsPage />} />
             <Route path="/report/:matchId"  element={<ReportPage />} />
             <Route path="/login"            element={<LoginPage />} />

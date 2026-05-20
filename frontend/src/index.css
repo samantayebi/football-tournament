@@ -190,6 +190,27 @@ tr:hover td { background: #fafbfc; }
 .connector         { stroke: #d3d1c7; stroke-width: 1.5; fill: none; }
 .round-label       { font-size: 11px; font-weight: 600; fill: #888; text-transform: uppercase; letter-spacing: 0.06em; }
 
+/* ── Landing page ── */
+.hero { text-align: center; padding: 48px 24px 32px; }
+.hero-title { font-size: 36px; font-weight: 700; margin: 0 0 8px; color: #1a1a2e; }
+.hero-sub { font-size: 15px; color: #888; margin: 0 0 24px; }
+.status-badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 24px; }
+.status-enrollment { background: #e6f1fb; color: #0c447c; }
+.status-progress   { background: #e1f5ee; color: #085041; }
+.status-completed  { background: #faeeda; color: #633806; }
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 32px 0; }
+.stat-card { background: #fff; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.stat-number { font-size: 32px; font-weight: 700; color: #1a1a2e; margin: 0; }
+.stat-label { font-size: 12px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.06em; }
+.hero-actions { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
+.btn-primary { background: #1a1a2e; color: #fff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px; }
+.btn-secondary { background: #fff; color: #1a1a2e; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 14px; border: 1px solid #dde2ec; }
+.recent-results { margin-top: 32px; }
+.result-row { display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 8px; padding: 14px 20px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.result-teams { font-size: 14px; font-weight: 500; }
+.result-score { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+.result-round { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+
 /* ── Live badge ── */
 .live-badge {
   display: inline-block;
