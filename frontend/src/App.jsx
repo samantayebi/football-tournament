@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth, useTheme } from './context/AuthContext';
 import ProtectedRoute   from './components/ProtectedRoute';
 import LandingPage      from './pages/public/LandingPage';
 import BracketPage      from './pages/public/BracketPage';
@@ -11,7 +11,8 @@ import BracketAdminPage from './pages/admin/BracketAdminPage';
 import ResultEntryPage  from './pages/admin/ResultEntryPage';
 
 function Navbar() {
-  const { token, logout } = useAuth();
+  const { token, logout }     = useAuth();
+  const { theme, toggleTheme } = useTheme();
   return (
     <nav>
       <div className="nav-left">
@@ -30,6 +31,12 @@ function Navbar() {
         ) : (
           <NavLink to="/login">Admin Login</NavLink>
         )}
+        <button
+          onClick={toggleTheme}
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#ccd6f6' }}
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
       </div>
     </nav>
   );

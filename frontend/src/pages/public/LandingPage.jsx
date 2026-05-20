@@ -39,12 +39,36 @@ const STATUS_CLASS = {
   'COMPLETED':   'status-completed',
 };
 
+function SkeletonLanding() {
+  return (
+    <div>
+      <div className="hero">
+        <div className="skeleton" style={{ height: 44, width: 340, margin: '0 auto 16px' }} />
+        <div className="skeleton" style={{ height: 18, width: 200, margin: '0 auto 32px' }} />
+        <div className="skeleton" style={{ height: 26, width: 120, margin: '0 auto 24px' }} />
+        <div className="stat-grid">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="skeleton" style={{ height: 84 }} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 24 }}>
+          <div className="skeleton" style={{ height: 40, width: 120 }} />
+          <div className="skeleton" style={{ height: 40, width: 130 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
-  const [bracket, setBracket]     = useState({});
-  const [live, setLive]           = useState(false);
+  const [bracket, setBracket] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [live, setLive]       = useState(false);
 
   const fetchAll = useCallback(() => {
-    api.get('/api/v1/public/bracket').then(r => setBracket(r.data)).catch(() => {});
+    api.get('/api/v1/public/bracket')
+      .then(r => { setBracket(r.data); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -59,6 +83,8 @@ export default function LandingPage() {
     };
     return () => es.close();
   }, [fetchAll]);
+
+  if (loading) return <SkeletonLanding />;
 
   const stats   = computeStats(bracket);
   const status  = computeStatus(bracket);
