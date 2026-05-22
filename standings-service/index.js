@@ -47,6 +47,7 @@ app.get('/health', async (req, res) => {
 });
 
 app.get('/api/v1/standings', async (req, res) => {
+  const tournament_id = parseInt(req.query.tournament_id || '1', 10);
   try {
     const { rows } = await pool.query(`
       SELECT
@@ -77,9 +78,11 @@ app.get('/api/v1/standings', async (req, res) => {
       FROM teams t
       LEFT JOIN matches m
         ON (m.team1_id = t.id OR m.team2_id = t.id)
+        AND m.tournament_id = $1
+      WHERE t.tournament_id = $1
       GROUP BY t.id, t.name
       ORDER BY wins DESC, goals_scored DESC
-    `);
+    `, [tournament_id]);
     standingsQueriesTotal.inc();
     res.json(rows);
   } catch (err) {

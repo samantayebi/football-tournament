@@ -15,9 +15,9 @@ router.post('/enrollment', async (req, res) => {
 });
 
 router.get('/enrollment', async (req, res) => {
+  const tournament_id = req.query.tournament_id || 1;
   try {
-    const teams = await getAllTeams();
-    res.json(teams);
+    res.json(await getAllTeams(tournament_id));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

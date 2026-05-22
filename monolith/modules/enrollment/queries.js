@@ -18,7 +18,7 @@ async function createPlayer(team_id, name, shirt_number) {
   return rows[0];
 }
 
-async function getAllTeams() {
+async function getAllTeams(tournament_id) {
   const { rows } = await pool.query(`
     SELECT t.*,
            COALESCE(
@@ -27,9 +27,10 @@ async function getAllTeams() {
            ) AS players
     FROM teams t
     LEFT JOIN players p ON p.team_id = t.id
+    WHERE t.tournament_id = $1
     GROUP BY t.id
     ORDER BY t.id
-  `);
+  `, [tournament_id]);
   return rows;
 }
 

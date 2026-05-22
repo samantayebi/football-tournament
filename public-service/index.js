@@ -60,16 +60,18 @@ app.get('/health', async (req, res) => {
 });
 
 app.get('/api/v1/public/bracket', async (req, res) => {
+  const tournament_id = req.query.tournament_id || 1;
+  const cacheKey = `bracket:${tournament_id}`;
   try {
-    const cached = await redis.get('bracket');
+    const cached = await redis.get(cacheKey);
     if (cached) {
       cacheHitsTotal.inc({ key: 'bracket' });
-      logger.info('cache hit', { key: 'bracket' });
+      logger.info('cache hit', { key: cacheKey });
       return res.json(JSON.parse(cached));
     }
 
     cacheMissesTotal.inc({ key: 'bracket' });
-    logger.info('cache miss', { key: 'bracket' });
+    logger.info('cache miss', { key: cacheKey });
     const { rows } = await pool.query(`
       SELECT m.*,
              t1.name AS team1_name,
@@ -79,8 +81,9 @@ app.get('/api/v1/public/bracket', async (req, res) => {
       LEFT JOIN teams t1 ON t1.id = m.team1_id
       LEFT JOIN teams t2 ON t2.id = m.team2_id
       LEFT JOIN teams w  ON w.id  = m.winner_id
+      WHERE m.tournament_id = $1
       ORDER BY m.round, m.id
-    `);
+    `, [tournament_id]);
 
     const bracket = rows.reduce((acc, match) => {
       const key = `round_${match.round}`;
@@ -89,7 +92,7 @@ app.get('/api/v1/public/bracket', async (req, res) => {
       return acc;
     }, {});
 
-    await redis.set('bracket', JSON.stringify(bracket), 'EX', CACHE_TTL);
+    await redis.set(cacheKey, JSON.stringify(bracket), 'EX', CACHE_TTL);
     res.json(bracket);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -97,18 +100,22 @@ app.get('/api/v1/public/bracket', async (req, res) => {
 });
 
 app.get('/api/v1/public/standings', async (req, res) => {
+  const tournament_id = req.query.tournament_id || 1;
+  const cacheKey = `standings:${tournament_id}`;
   try {
-    const cached = await redis.get('standings');
+    const cached = await redis.get(cacheKey);
     if (cached) {
       cacheHitsTotal.inc({ key: 'standings' });
-      logger.info('cache hit', { key: 'standings' });
+      logger.info('cache hit', { key: cacheKey });
       return res.json(JSON.parse(cached));
     }
 
     cacheMissesTotal.inc({ key: 'standings' });
-    logger.info('cache miss', { key: 'standings' });
-    const { data } = await axios.get(`${process.env.STANDINGS_URL}/api/v1/standings`);
-    await redis.set('standings', JSON.stringify(data), 'EX', CACHE_TTL);
+    logger.info('cache miss', { key: cacheKey });
+    const { data } = await axios.get(`${process.env.STANDINGS_URL}/api/v1/standings`, {
+      params: { tournament_id },
+    });
+    await redis.set(cacheKey, JSON.stringify(data), 'EX', CACHE_TTL);
     res.json(data);
   } catch (err) {
     res.status(502).json({ error: 'Failed to reach standings service' });
@@ -163,10 +170,15 @@ async function connectRabbitMQ() {
     if (!msg) return;
     const { event } = JSON.parse(msg.content.toString());
     if (event === 'match.completed') {
-      await redis.del('bracket', 'standings');
+      const [bracketKeys, standingsKeys] = await Promise.all([
+        redis.keys('bracket:*'),
+        redis.keys('standings:*'),
+      ]);
+      const allKeys = [...bracketKeys, ...standingsKeys];
+      if (allKeys.length) await redis.del(...allKeys);
       cacheInvalidationsTotal.inc();
       rabbitmqEventsReceivedTotal.inc({ event_name: 'match.completed' });
-      logger.info('cache invalidated', { keys: ['bracket', 'standings'] });
+      logger.info('cache invalidated', { keys: allKeys });
 
       const ssePayload = `data: ${JSON.stringify({ type: 'match.completed', timestamp: new Date().toISOString() })}\n\n`;
       for (const client of sseClients) client.write(ssePayload);
