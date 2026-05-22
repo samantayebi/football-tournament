@@ -13,6 +13,8 @@ const enrollment = require('./modules/enrollment');
 const bracket    = require('./modules/bracket');
 const results    = require('./modules/results');
 const reports    = require('./modules/reports');
+const tournament = require('./modules/tournament');
+const { getAllTournaments } = require('./modules/tournament/queries');
 
 const app = express();
 
@@ -59,5 +61,14 @@ app.use('/api/v1/admin', auth, enrollment);
 app.use('/api/v1/admin', auth, bracket);
 app.use('/api/v1/admin', auth, results);
 app.use('/api/v1/admin', auth, reports);
+app.use('/api/v1/admin', auth, tournament);
+
+app.get('/api/v1/public/tournaments', async (_req, res) => {
+  try {
+    res.json(await getAllTournaments());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = app;

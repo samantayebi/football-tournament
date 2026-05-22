@@ -1,6 +1,7 @@
 CREATE TABLE tournament (
   id     SERIAL PRIMARY KEY,
   name   VARCHAR(255),
+  format VARCHAR(50) DEFAULT 'single-elimination',
   status VARCHAR(50) DEFAULT 'enrollment'
 );
 
