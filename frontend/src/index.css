@@ -234,6 +234,10 @@ tr:hover td { background: var(--bg-app); }
 .result-score { font-size: 18px; font-weight: 700; color: var(--text-primary); }
 .result-round { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
+/* ── Tournament selector ── */
+.tournament-select { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #ccd6f6; padding: 4px 8px; border-radius: 4px; font-size: 13px; cursor: pointer; margin-left: 8px; }
+.tournament-select option { background: #1a1a2e; color: #fff; }
+
 /* ── Skeleton loader ── */
 .skeleton {
   background: linear-gradient(90deg, var(--border) 25%, var(--bg-app) 50%, var(--border) 75%);

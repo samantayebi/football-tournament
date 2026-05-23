@@ -1,16 +1,19 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '../../api';
+import { useTournament } from '../../context/TournamentContext';
 
 export default function StandingsPage() {
+  const { selectedId } = useTournament();
   const [standings, setStandings] = useState([]);
   const [error, setError]         = useState('');
   const [live, setLive]           = useState(false);
 
   const fetchStandings = useCallback(() => {
-    api.get('/api/v1/public/standings')
+    if (!selectedId) return;
+    api.get(`/api/v1/public/standings?tournament_id=${selectedId}`)
       .then(r => setStandings(r.data))
       .catch(() => setError('Failed to load standings'));
-  }, []);
+  }, [selectedId]);
 
   useEffect(() => { fetchStandings(); }, [fetchStandings]);
 

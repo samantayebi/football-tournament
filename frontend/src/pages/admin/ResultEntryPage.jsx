@@ -1,21 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTournament } from '../../context/TournamentContext';
 import api from '../../api';
 
 export default function ResultEntryPage() {
   const { token } = useAuth();
+  const { selectedId } = useTournament();
   const authHeader = { Authorization: `Bearer ${token}` };
 
   const [matches, setMatches] = useState([]);
   const [scores, setScores]   = useState({});
   const [error, setError]     = useState('');
 
-  const fetchMatches = () =>
-    api.get('/api/v1/admin/bracket', { headers: authHeader })
+  const fetchMatches = useCallback(() => {
+    if (!selectedId) return;
+    api.get(`/api/v1/admin/bracket?tournament_id=${selectedId}`, { headers: authHeader })
        .then(r => setMatches(r.data))
        .catch(() => setError('Failed to load matches'));
+  }, [selectedId, token]);
 
-  useEffect(() => { fetchMatches(); }, []);
+  useEffect(() => { fetchMatches(); }, [fetchMatches]);
 
   function updateScore(matchId, field, value) {
     setScores(s => ({ ...s, [matchId]: { ...s[matchId], [field]: value } }));

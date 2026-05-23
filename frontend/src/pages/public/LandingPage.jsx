@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
+import { useTournament } from '../../context/TournamentContext';
 
 function computeStats(bracket) {
   const all = Object.values(bracket).flat();
@@ -61,15 +62,18 @@ function SkeletonLanding() {
 }
 
 export default function LandingPage() {
+  const { selectedId, selectedTournament } = useTournament();
   const [bracket, setBracket] = useState({});
   const [loading, setLoading] = useState(true);
   const [live, setLive]       = useState(false);
 
   const fetchAll = useCallback(() => {
-    api.get('/api/v1/public/bracket')
+    if (!selectedId) return;
+    setLoading(true);
+    api.get(`/api/v1/public/bracket?tournament_id=${selectedId}`)
       .then(r => { setBracket(r.data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }, [selectedId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -84,7 +88,7 @@ export default function LandingPage() {
     return () => es.close();
   }, [fetchAll]);
 
-  if (loading) return <SkeletonLanding />;
+  if (loading || !selectedId) return <SkeletonLanding />;
 
   const stats   = computeStats(bracket);
   const status  = computeStatus(bracket);
@@ -94,7 +98,7 @@ export default function LandingPage() {
     <div>
       <div className="hero">
         <h1 className="hero-title">
-          Football Tournament 2026
+          {selectedTournament?.name || 'Football Tournament'}
           {live && <span className="live-badge">LIVE</span>}
         </h1>
         <p className="hero-sub">Single-elimination tournament</p>

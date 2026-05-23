@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTournament } from '../../context/TournamentContext';
 import api from '../../api';
 
 function groupByRound(matches) {
@@ -13,23 +14,26 @@ function groupByRound(matches) {
 
 export default function BracketAdminPage() {
   const { token } = useAuth();
+  const { selectedId } = useTournament();
   const authHeader = { Authorization: `Bearer ${token}` };
 
   const [bracket, setBracket]           = useState({});
   const [scheduleForm, setScheduleForm] = useState({});
   const [error, setError]               = useState('');
 
-  const fetchBracket = () =>
-    api.get('/api/v1/admin/bracket', { headers: authHeader })
+  const fetchBracket = useCallback(() => {
+    if (!selectedId) return;
+    api.get(`/api/v1/admin/bracket?tournament_id=${selectedId}`, { headers: authHeader })
        .then(r => setBracket(groupByRound(r.data)))
        .catch(() => setError('Failed to load bracket'));
+  }, [selectedId, token]);
 
-  useEffect(() => { fetchBracket(); }, []);
+  useEffect(() => { fetchBracket(); }, [fetchBracket]);
 
   async function handleGenerate() {
     setError('');
     try {
-      await api.post('/api/v1/admin/bracket/generate', {}, { headers: authHeader });
+      await api.post('/api/v1/admin/bracket/generate', { tournament_id: selectedId }, { headers: authHeader });
       setScheduleForm({});
       fetchBracket();
     } catch (err) {
@@ -77,7 +81,7 @@ export default function BracketAdminPage() {
               {match.score_team1 != null && (
                 <div className="score">{match.score_team1} – {match.score_team2}</div>
               )}
-              {match.venue     && <div className="venue">{match.venue}</div>}
+              {match.venue      && <div className="venue">{match.venue}</div>}
               {match.match_date && <div className="date">{new Date(match.match_date).toLocaleString()}</div>}
 
               <div className="schedule-form">

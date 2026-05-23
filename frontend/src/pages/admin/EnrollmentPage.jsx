@@ -1,21 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTournament } from '../../context/TournamentContext';
 import api from '../../api';
 
 export default function EnrollmentPage() {
   const { token } = useAuth();
+  const { selectedId, selectedTournament } = useTournament();
   const authHeader = { Authorization: `Bearer ${token}` };
 
   const [teams, setTeams]   = useState([]);
   const [error, setError]   = useState('');
   const [form, setForm]     = useState({ name: '', contact_email: '', players: '' });
 
-  const fetchTeams = () =>
-    api.get('/api/v1/admin/enrollment', { headers: authHeader })
+  const fetchTeams = useCallback(() => {
+    if (!selectedId) return;
+    api.get(`/api/v1/admin/enrollment?tournament_id=${selectedId}`, { headers: authHeader })
        .then(r => setTeams(r.data))
        .catch(() => setError('Failed to load teams'));
+  }, [selectedId, token]);
 
-  useEffect(() => { fetchTeams(); }, []);
+  useEffect(() => { fetchTeams(); }, [fetchTeams]);
 
   async function handleStatusChange(id, status) {
     await api.patch(`/api/v1/admin/enrollment/${id}`, { status }, { headers: authHeader });
@@ -30,8 +34,9 @@ export default function EnrollmentPage() {
       .map((name, i) => ({ name: name.trim(), shirt_number: i + 1 }))
       .filter(p => p.name);
     try {
-      await api.post('/api/v1/admin/enrollment',
-        { name: form.name, contact_email: form.contact_email, players },
+      await api.post(
+        '/api/v1/admin/enrollment',
+        { tournament_id: selectedId, name: form.name, contact_email: form.contact_email, players },
         { headers: authHeader }
       );
       setForm({ name: '', contact_email: '', players: '' });
@@ -43,7 +48,7 @@ export default function EnrollmentPage() {
 
   return (
     <div className="page">
-      <h1>Team Enrollment</h1>
+      <h1>Team Enrollment{selectedTournament ? ` — ${selectedTournament.name}` : ''}</h1>
 
       <section>
         <h2>Add Team</h2>

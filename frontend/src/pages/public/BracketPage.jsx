@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '../../api';
+import { useTournament } from '../../context/TournamentContext';
 
 const CW = 200;
 const CH = 72;
@@ -39,16 +40,18 @@ function colX(r) {
 }
 
 export default function BracketPage() {
+  const { selectedId } = useTournament();
   const [bracket, setBracket]     = useState({});
   const [error, setError]         = useState('');
   const [updatedAt, setUpdatedAt] = useState(null);
   const [live, setLive]           = useState(false);
 
   const fetchBracket = useCallback(() => {
-    api.get('/api/v1/public/bracket')
+    if (!selectedId) return;
+    api.get(`/api/v1/public/bracket?tournament_id=${selectedId}`)
       .then(r => { setBracket(r.data); setUpdatedAt(new Date()); })
       .catch(() => setError('Failed to load bracket'));
-  }, []);
+  }, [selectedId]);
 
   useEffect(() => { fetchBracket(); }, [fetchBracket]);
 
