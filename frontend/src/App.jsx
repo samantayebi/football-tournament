@@ -6,6 +6,7 @@ import LandingPage       from './pages/public/LandingPage';
 import BracketPage       from './pages/public/BracketPage';
 import StandingsPage     from './pages/public/StandingsPage';
 import ReportPage        from './pages/public/ReportPage';
+import TopScorersPage    from './pages/public/TopScorersPage';
 import LoginPage         from './pages/admin/LoginPage';
 import EnrollmentPage    from './pages/admin/EnrollmentPage';
 import BracketAdminPage  from './pages/admin/BracketAdminPage';
@@ -34,6 +35,7 @@ function Navbar() {
         )}
         <NavLink to="/bracket">Bracket</NavLink>
         <NavLink to="/standings">Standings</NavLink>
+        <NavLink to="/top-scorers">Top Scorers</NavLink>
       </div>
       <div className="nav-right">
         {token ? (
@@ -70,6 +72,7 @@ export default function App() {
               <Route path="/bracket"             element={<BracketPage />} />
               <Route path="/standings"           element={<StandingsPage />} />
               <Route path="/report/:matchId"     element={<ReportPage />} />
+              <Route path="/top-scorers"         element={<TopScorersPage />} />
               <Route path="/login"               element={<LoginPage />} />
               <Route path="/admin/tournaments"   element={<ProtectedRoute><TournamentsPage /></ProtectedRoute>} />
               <Route path="/admin/enrollment"    element={<ProtectedRoute><EnrollmentPage /></ProtectedRoute>} />

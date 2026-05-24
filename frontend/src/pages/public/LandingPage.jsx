@@ -48,7 +48,7 @@ function SkeletonLanding() {
         <div className="skeleton" style={{ height: 18, width: 200, margin: '0 auto 32px' }} />
         <div className="skeleton" style={{ height: 26, width: 120, margin: '0 auto 24px' }} />
         <div className="stat-grid">
-          {[0, 1, 2, 3].map(i => (
+          {[0, 1, 2, 3, 4].map(i => (
             <div key={i} className="skeleton" style={{ height: 84 }} />
           ))}
         </div>
@@ -63,16 +63,22 @@ function SkeletonLanding() {
 
 export default function LandingPage() {
   const { selectedId, selectedTournament } = useTournament();
-  const [bracket, setBracket] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [live, setLive]       = useState(false);
+  const [bracket, setBracket]       = useState({});
+  const [topScorer, setTopScorer]   = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [live, setLive]             = useState(false);
 
   const fetchAll = useCallback(() => {
     if (!selectedId) return;
     setLoading(true);
-    api.get(`/api/v1/public/bracket?tournament_id=${selectedId}`)
-      .then(r => { setBracket(r.data); setLoading(false); })
-      .catch(() => setLoading(false));
+    Promise.all([
+      api.get(`/api/v1/public/bracket?tournament_id=${selectedId}`),
+      api.get(`/api/v1/public/top-scorers?tournament_id=${selectedId}&limit=1`),
+    ]).then(([bracketRes, scorersRes]) => {
+      setBracket(bracketRes.data);
+      setTopScorer(scorersRes.data[0] ?? null);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [selectedId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -122,6 +128,14 @@ export default function LandingPage() {
           <div className="stat-card">
             <p className="stat-number">{stats.currentRound || '—'}</p>
             <p className="stat-label">Current Round</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-number" style={{ fontSize: topScorer ? 20 : 32 }}>
+              {topScorer ? topScorer.player_name : '—'}
+            </p>
+            <p className="stat-label">
+              Top Scorer{topScorer ? ` (${topScorer.goals} goals)` : ''}
+            </p>
           </div>
         </div>
 

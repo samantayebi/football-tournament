@@ -235,7 +235,7 @@ tr:hover td { background: var(--bg-app); }
 .status-enrollment { background: #e6f1fb; color: #0c447c; }
 .status-progress   { background: #e1f5ee; color: #085041; }
 .status-completed  { background: #faeeda; color: #633806; }
-.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 32px 0; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin: 32px 0; }
 .stat-card { background: var(--bg-card); border-radius: 10px; padding: 20px; text-align: center; box-shadow: var(--shadow); }
 .stat-number { font-size: 32px; font-weight: 700; color: var(--text-primary); margin: 0; }
 .stat-label { font-size: 12px; color: var(--text-muted); margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.06em; }
