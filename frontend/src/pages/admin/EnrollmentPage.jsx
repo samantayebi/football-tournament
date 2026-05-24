@@ -3,6 +3,22 @@ import { useAuth } from '../../context/AuthContext';
 import { useTournament } from '../../context/TournamentContext';
 import api from '../../api';
 
+const CLUB_NAMES = [
+  'FC Thunder', 'Athletic Eagles', 'Real Lions', 'Sporting Wolves',
+  'United Bears', 'City Panthers', 'Racing Tigers', 'Dynamic Hawks',
+  'Premier Bulls', 'Elite Falcons', 'Royal Sharks', 'Classic Foxes',
+  'Victory Vipers', 'Champion Cobras', 'Golden Stallions', 'Iron Phoenix',
+  'Storm United', 'Blaze FC', 'Titan Rangers', 'Apex Rovers',
+];
+
+const PLAYER_NAMES = [
+  'Marco Rossi', 'Luca Ferrari', 'Giovanni Russo', 'Antonio Esposito',
+  'Francesco Romano', 'Alessandro Colombo', 'Stefano Ricci', 'Andrea Marino',
+  'Roberto Greco', 'Davide Bruno', 'Matteo Gallo', 'Lorenzo Conti',
+  'Simone Mancini', 'Daniele Costa', 'Fabio Giordano', 'Emanuele Rizzo',
+  'Cristiano Villa', 'Massimo Serra', 'Claudio Fontana', 'Giorgio Barbieri',
+];
+
 export default function EnrollmentPage() {
   const { token } = useAuth();
   const { selectedId, selectedTournament } = useTournament();
@@ -26,11 +42,20 @@ export default function EnrollmentPage() {
     fetchTeams();
   }
 
+  function randomName() {
+    setForm(f => ({ ...f, name: CLUB_NAMES[Math.floor(Math.random() * CLUB_NAMES.length)] }));
+  }
+
+  function randomPlayers() {
+    const shuffled = [...PLAYER_NAMES].sort(() => Math.random() - 0.5);
+    setForm(f => ({ ...f, players: shuffled.slice(0, 5).join('\n') }));
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     const players = form.players
-      .split(',')
+      .split(/[\n,]/)
       .map((name, i) => ({ name: name.trim(), shirt_number: i + 1 }))
       .filter(p => p.name);
     try {
@@ -54,23 +79,31 @@ export default function EnrollmentPage() {
         <h2>Add Team</h2>
         {error && <p className="error">{error}</p>}
         <form onSubmit={handleSubmit}>
-          <input
-            placeholder="Team name"
-            value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
-            required
-          />
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <input
+              placeholder="Team name"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+              required
+            />
+            <button type="button" className="btn-random" onClick={randomName}>🎲 Random</button>
+          </div>
           <input
             type="email"
             placeholder="Contact email"
             value={form.contact_email}
             onChange={e => setForm({ ...form, contact_email: e.target.value })}
           />
-          <input
-            placeholder="Players — comma-separated names"
-            value={form.players}
-            onChange={e => setForm({ ...form, players: e.target.value })}
-          />
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+            <textarea
+              placeholder="Players — one per line or comma-separated"
+              value={form.players}
+              onChange={e => setForm({ ...form, players: e.target.value })}
+              rows={5}
+              style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '14px', background: 'var(--bg-card)', color: 'var(--text-primary)', resize: 'vertical' }}
+            />
+            <button type="button" className="btn-random" onClick={randomPlayers}>🎲 Random Players</button>
+          </div>
           <button type="submit">Submit Enrollment</button>
         </form>
       </section>

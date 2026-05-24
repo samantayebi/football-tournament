@@ -25,6 +25,13 @@ export default function ResultEntryPage() {
     setScores(s => ({ ...s, [matchId]: { ...s[matchId], [field]: value } }));
   }
 
+  function randomResult(matchId) {
+    let s1 = Math.floor(Math.random() * 6);
+    let s2 = Math.floor(Math.random() * 6);
+    if (s1 === s2) s1 += 1;
+    setScores(s => ({ ...s, [matchId]: { score_team1: s1, score_team2: s2 } }));
+  }
+
   async function handleSubmit(matchId) {
     const { score_team1, score_team2 } = scores[matchId] || {};
     try {
@@ -69,6 +76,7 @@ export default function ResultEntryPage() {
                       type="number"
                       min="0"
                       placeholder="0"
+                      value={scores[match.id]?.score_team1 ?? ''}
                       onChange={e => updateScore(match.id, 'score_team1', e.target.value)}
                     />
                     <span>–</span>
@@ -76,8 +84,10 @@ export default function ResultEntryPage() {
                       type="number"
                       min="0"
                       placeholder="0"
+                      value={scores[match.id]?.score_team2 ?? ''}
                       onChange={e => updateScore(match.id, 'score_team2', e.target.value)}
                     />
+                    <button type="button" className="btn-random" onClick={() => randomResult(match.id)}>🎲 Random</button>
                   </div>
                 )}
               </td>

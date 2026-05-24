@@ -190,6 +190,20 @@ tr:hover td { background: var(--bg-app); }
 
 .score-inputs input { width: 56px; text-align: center; }
 
+/* ── Random helper buttons ── */
+.btn-random {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.btn-random:hover { border-color: #27ae60; color: #27ae60; }
+
 /* ── Report ── */
 .report-card {
   background: var(--bg-card);
