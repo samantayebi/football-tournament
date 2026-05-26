@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
+const path    = require('path');
 const jwt     = require('jsonwebtoken');
 
 const pool       = require('./db');
@@ -23,6 +24,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use((req, _res, next) => {
   logger.info('incoming request', { method: req.method, url: req.url, ip: req.ip });
   next();

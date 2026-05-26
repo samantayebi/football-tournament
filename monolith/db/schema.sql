@@ -11,7 +11,8 @@ CREATE TABLE teams (
   name            VARCHAR(255),
   contact_email   VARCHAR(255),
   status          VARCHAR(50) DEFAULT 'pending',
-  seed            INT DEFAULT NULL
+  seed            INT DEFAULT NULL,
+  logo_url        VARCHAR(500) DEFAULT NULL
 );
 
 CREATE TABLE players (

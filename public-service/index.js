@@ -74,9 +74,11 @@ app.get('/api/v1/public/bracket', async (req, res) => {
     logger.info('cache miss', { key: cacheKey });
     const { rows } = await pool.query(`
       SELECT m.*,
-             t1.name AS team1_name,
-             t2.name AS team2_name,
-             w.name  AS winner_name
+             t1.name     AS team1_name,
+             t1.logo_url AS team1_logo,
+             t2.name     AS team2_name,
+             t2.logo_url AS team2_logo,
+             w.name      AS winner_name
       FROM matches m
       LEFT JOIN teams t1 ON t1.id = m.team1_id
       LEFT JOIN teams t2 ON t2.id = m.team2_id

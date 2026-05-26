@@ -58,6 +58,17 @@ export default function EnrollmentPage() {
     }
   }
 
+  async function handleLogoUpload(teamId, file) {
+    const formData = new FormData();
+    formData.append('logo', file);
+    try {
+      await api.post(`/api/v1/admin/enrollment/${teamId}/logo`, formData, { headers: authHeader });
+      fetchTeams();
+    } catch {
+      setError('Failed to upload logo');
+    }
+  }
+
   async function handleClearAllSeeds() {
     const approved = teams.filter(t => t.status === 'approved' && t.seed != null);
     try {
@@ -162,10 +173,21 @@ export default function EnrollmentPage() {
             {teams.map(team => (
               <tr key={team.id}>
                 <td>
-                  {team.seed != null && (
-                    <strong style={{ color: '#4a9eff', marginRight: 5 }}>#{team.seed}</strong>
-                  )}
-                  {team.name}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {team.logo_url && (
+                      <img
+                        src={team.logo_url}
+                        alt=""
+                        style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border)' }}
+                      />
+                    )}
+                    <span>
+                      {team.seed != null && (
+                        <strong style={{ color: '#4a9eff', marginRight: 5 }}>#{team.seed}</strong>
+                      )}
+                      {team.name}
+                    </span>
+                  </div>
                 </td>
                 <td>{team.contact_email}</td>
                 <td>{team.players?.length ?? 0}</td>
@@ -196,6 +218,19 @@ export default function EnrollmentPage() {
                         <button className="sm" onClick={() => handleSetSeed(team.id)}>
                           Set Seed
                         </button>
+                        <label style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-secondary)', borderRadius: 6, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            style={{ display: 'none' }}
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) handleLogoUpload(team.id, file);
+                              e.target.value = '';
+                            }}
+                          />
+                          📷 Logo
+                        </label>
                       </>
                     )}
                   </div>

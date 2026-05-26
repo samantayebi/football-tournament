@@ -164,10 +164,16 @@ export default function BracketPage() {
                   <rect x={x} y={y} width={CW} height={CH} rx={6}
                     className={won ? 'match-card-winner' : 'match-card-normal'} strokeWidth={1.5} />
                   <line x1={x} y1={y+CH/2} x2={x+CW} y2={y+CH/2} stroke="#dde2ec" strokeWidth={1} />
-                  <text x={x+12} y={y+CH/4} dominantBaseline="middle" className={`team-name ${t1cls}`}>
+                  {m.team1_logo && (
+                    <image href={m.team1_logo} x={x+8} y={y+CH/4-8} width={16} height={16} />
+                  )}
+                  <text x={m.team1_logo ? x+28 : x+12} y={y+CH/4} dominantBaseline="middle" className={`team-name ${t1cls}`}>
                     {m.team1_name || 'TBD'}
                   </text>
-                  <text x={x+12} y={y+CH*3/4} dominantBaseline="middle" className={`team-name ${t2cls}`}>
+                  {m.team2_logo && (
+                    <image href={m.team2_logo} x={x+8} y={y+CH*3/4-8} width={16} height={16} />
+                  )}
+                  <text x={m.team2_logo ? x+28 : x+12} y={y+CH*3/4} dominantBaseline="middle" className={`team-name ${t2cls}`}>
                     {m.team2_name || 'TBD'}
                   </text>
                   {m.score_team1 != null && <>

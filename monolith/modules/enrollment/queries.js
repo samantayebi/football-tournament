@@ -50,4 +50,12 @@ async function updateTeamSeed(teamId, seed) {
   return rows[0] || null;
 }
 
-module.exports = { createTeam, createPlayer, getAllTeams, updateTeamStatus, updateTeamSeed };
+async function updateTeamLogo(teamId, logoUrl) {
+  const { rows } = await pool.query(
+    `UPDATE teams SET logo_url = $1 WHERE id = $2 RETURNING *`,
+    [logoUrl, teamId]
+  );
+  return rows[0] || null;
+}
+
+module.exports = { createTeam, createPlayer, getAllTeams, updateTeamStatus, updateTeamSeed, updateTeamLogo };
