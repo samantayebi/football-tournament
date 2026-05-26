@@ -3,6 +3,7 @@ const logger = require('../../utils/logger');
 const { matchResultsTotal } = require('../../utils/metrics');
 const { determineWinner } = require('../../utils/resultUtils');
 const { publishEvent }    = require('../../utils/eventPublisher');
+const { upsertReport }    = require('../reports/queries');
 
 async function getMatchById(id) {
   const { rows } = await pool.query('SELECT * FROM matches WHERE id = $1', [id]);
@@ -46,6 +47,37 @@ async function setMatchResult(id, score_team1, score_team2) {
   const updated = rows[0];
 
   await advanceWinner(updated);
+
+  // Auto-generate match report
+  try {
+    const { rows: teams } = await pool.query(
+      `SELECT id, name FROM teams WHERE id = ANY($1::int[])`,
+      [[updated.team1_id, updated.team2_id]]
+    );
+    const teamMap    = Object.fromEntries(teams.map(t => [t.id, t.name]));
+    const team1Name  = teamMap[updated.team1_id]  || 'Team 1';
+    const team2Name  = teamMap[updated.team2_id]  || 'Team 2';
+    const winnerName = teamMap[updated.winner_id] || 'Unknown';
+
+    const { rows: goals } = await pool.query(
+      `SELECT p.name AS player_name, mg.minute
+       FROM match_goals mg
+       JOIN players p ON p.id = mg.player_id
+       WHERE mg.match_id = $1
+       ORDER BY mg.minute ASC NULLS LAST, mg.id ASC`,
+      [updated.id]
+    );
+
+    let summary = `Match completed. Final score: ${team1Name} ${updated.score_team1} - ${updated.score_team2} ${team2Name}. Winner: ${winnerName}.`;
+    if (goals.length > 0) {
+      const goalStr = goals.map(g => g.minute ? `${g.player_name} (${g.minute}')` : g.player_name).join(', ');
+      summary += ` Goals: ${goalStr}.`;
+    }
+
+    await upsertReport(updated.id, summary);
+  } catch (err) {
+    logger.warn('failed to auto-generate match report', { matchId: updated.id, err: err.message });
+  }
 
   await publishEvent('match.completed', {
     matchId:      updated.id,

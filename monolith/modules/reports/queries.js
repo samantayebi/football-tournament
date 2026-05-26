@@ -9,15 +9,11 @@ async function getReport(match_id) {
 }
 
 async function upsertReport(match_id, summary) {
-  // Try update first; fall back to insert if no existing report
-  const { rows: updated } = await pool.query(
-    `UPDATE reports SET summary = $1 WHERE match_id = $2 RETURNING *`,
-    [summary, match_id]
-  );
-  if (updated.length > 0) return updated[0];
-
   const { rows } = await pool.query(
-    `INSERT INTO reports (match_id, summary) VALUES ($1, $2) RETURNING *`,
+    `INSERT INTO reports (match_id, summary)
+     VALUES ($1, $2)
+     ON CONFLICT (match_id) DO UPDATE SET summary = EXCLUDED.summary
+     RETURNING *`,
     [match_id, summary]
   );
   return rows[0];

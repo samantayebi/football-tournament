@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../api';
 import { useTournament } from '../../context/TournamentContext';
 
@@ -200,6 +201,35 @@ export default function BracketPage() {
           Last updated: {updatedAt.toLocaleTimeString()}
         </p>
       )}
+
+      {(() => {
+        const completed = rounds.flat().filter(m => m.winner_id != null);
+        if (completed.length === 0) return null;
+        return (
+          <div style={{ marginTop: 32 }}>
+            <h2>Match Reports</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {completed.map(m => (
+                <Link
+                  key={m.id}
+                  to={`/report/${m.id}`}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: 6,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                    textDecoration: 'none',
+                    fontSize: 13,
+                  }}
+                >
+                  📋 {m.team1_name} {m.score_team1}–{m.score_team2} {m.team2_name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
