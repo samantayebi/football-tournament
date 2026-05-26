@@ -24,9 +24,10 @@ export default function EnrollmentPage() {
   const { selectedId, selectedTournament } = useTournament();
   const authHeader = { Authorization: `Bearer ${token}` };
 
-  const [teams, setTeams]   = useState([]);
-  const [error, setError]   = useState('');
-  const [form, setForm]     = useState({ name: '', contact_email: '', players: '' });
+  const [teams, setTeams]           = useState([]);
+  const [error, setError]           = useState('');
+  const [form, setForm]             = useState({ name: '', contact_email: '', players: '' });
+  const [seedInputs, setSeedInputs] = useState({});
 
   const fetchTeams = useCallback(() => {
     if (!selectedId) return;
@@ -40,6 +41,35 @@ export default function EnrollmentPage() {
   async function handleStatusChange(id, status) {
     await api.patch(`/api/v1/admin/enrollment/${id}`, { status }, { headers: authHeader });
     fetchTeams();
+  }
+
+  async function handleSetSeed(teamId) {
+    const seed = seedInputs[teamId];
+    try {
+      await api.patch(
+        `/api/v1/admin/enrollment/${teamId}/seed`,
+        { seed: seed !== '' && seed != null ? Number(seed) : null },
+        { headers: authHeader }
+      );
+      setSeedInputs(s => ({ ...s, [teamId]: '' }));
+      fetchTeams();
+    } catch {
+      setError('Failed to set seed');
+    }
+  }
+
+  async function handleClearAllSeeds() {
+    const approved = teams.filter(t => t.status === 'approved' && t.seed != null);
+    try {
+      await Promise.all(
+        approved.map(t =>
+          api.patch(`/api/v1/admin/enrollment/${t.id}/seed`, { seed: null }, { headers: authHeader })
+        )
+      );
+      fetchTeams();
+    } catch {
+      setError('Failed to clear seeds');
+    }
   }
 
   function randomName() {
@@ -70,6 +100,9 @@ export default function EnrollmentPage() {
       setError('Failed to create team.');
     }
   }
+
+  const approvedCount = teams.filter(t => t.status === 'approved').length;
+  const hasAnySeeds   = teams.some(t => t.seed != null);
 
   return (
     <div className="page">
@@ -109,7 +142,12 @@ export default function EnrollmentPage() {
       </section>
 
       <section>
-        <h2>Enrollment Requests</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <h2 style={{ margin: 0 }}>Enrollment Requests</h2>
+          {hasAnySeeds && (
+            <button className="sm danger" onClick={handleClearAllSeeds}>Clear All Seeds</button>
+          )}
+        </div>
         <table>
           <thead>
             <tr>
@@ -123,12 +161,17 @@ export default function EnrollmentPage() {
           <tbody>
             {teams.map(team => (
               <tr key={team.id}>
-                <td>{team.name}</td>
+                <td>
+                  {team.seed != null && (
+                    <strong style={{ color: '#4a9eff', marginRight: 5 }}>#{team.seed}</strong>
+                  )}
+                  {team.name}
+                </td>
                 <td>{team.contact_email}</td>
                 <td>{team.players?.length ?? 0}</td>
                 <td>{team.status}</td>
                 <td>
-                  <div className="actions">
+                  <div className="actions" style={{ flexWrap: 'wrap' }}>
                     {team.status === 'pending' && (
                       <>
                         <button className="success sm" onClick={() => handleStatusChange(team.id, 'approved')}>
@@ -136,6 +179,22 @@ export default function EnrollmentPage() {
                         </button>
                         <button className="danger sm" onClick={() => handleStatusChange(team.id, 'rejected')}>
                           Reject
+                        </button>
+                      </>
+                    )}
+                    {team.status === 'approved' && (
+                      <>
+                        <input
+                          type="number"
+                          min="1"
+                          max={approvedCount}
+                          placeholder="Seed"
+                          value={seedInputs[team.id] ?? ''}
+                          onChange={e => setSeedInputs(s => ({ ...s, [team.id]: e.target.value }))}
+                          style={{ width: 64, padding: '4px 8px', fontSize: 12, border: '1px solid var(--border)', borderRadius: 4, background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+                        />
+                        <button className="sm" onClick={() => handleSetSeed(team.id)}>
+                          Set Seed
                         </button>
                       </>
                     )}

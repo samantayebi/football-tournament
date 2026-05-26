@@ -19,6 +19,7 @@ export default function BracketAdminPage() {
 
   const [bracket, setBracket]           = useState({});
   const [scheduleForm, setScheduleForm] = useState({});
+  const [useSeeding, setUseSeeding]     = useState(true);
   const [error, setError]               = useState('');
 
   const fetchBracket = useCallback(() => {
@@ -33,7 +34,11 @@ export default function BracketAdminPage() {
   async function handleGenerate() {
     setError('');
     try {
-      await api.post('/api/v1/admin/bracket/generate', { tournament_id: selectedId }, { headers: authHeader });
+      await api.post(
+        '/api/v1/admin/bracket/generate',
+        { tournament_id: selectedId, seeded: useSeeding },
+        { headers: authHeader }
+      );
       setScheduleForm({});
       fetchBracket();
     } catch (err) {
@@ -63,7 +68,19 @@ export default function BracketAdminPage() {
     <div className="page">
       <h1>Bracket Management</h1>
       {error && <p className="error">{error}</p>}
-      <button onClick={handleGenerate}>Generate Bracket</button>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+        <button onClick={handleGenerate}>Generate Bracket</button>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer', userSelect: 'none' }}>
+          <input
+            type="checkbox"
+            checked={useSeeding}
+            onChange={e => setUseSeeding(e.target.checked)}
+            style={{ width: 16, height: 16, cursor: 'pointer' }}
+          />
+          Use seeding if available
+        </label>
+      </div>
 
       {rounds.map(round => (
         <section key={round}>

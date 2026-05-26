@@ -42,4 +42,12 @@ async function updateTeamStatus(id, status) {
   return rows[0] || null;
 }
 
-module.exports = { createTeam, createPlayer, getAllTeams, updateTeamStatus };
+async function updateTeamSeed(teamId, seed) {
+  const { rows } = await pool.query(
+    `UPDATE teams SET seed = $1 WHERE id = $2 RETURNING *`,
+    [seed ?? null, teamId]
+  );
+  return rows[0] || null;
+}
+
+module.exports = { createTeam, createPlayer, getAllTeams, updateTeamStatus, updateTeamSeed };

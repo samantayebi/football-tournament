@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { createTeam, createPlayer, getAllTeams, updateTeamStatus } = require('./queries');
+const { createTeam, createPlayer, getAllTeams, updateTeamStatus, updateTeamSeed } = require('./queries');
 
 router.post('/enrollment', async (req, res) => {
   const { tournament_id = 1, name, contact_email, players = [] } = req.body;
@@ -27,6 +27,17 @@ router.patch('/enrollment/:id', async (req, res) => {
   const { status } = req.body;
   try {
     const team = await updateTeamStatus(req.params.id, status);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    res.json(team);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.patch('/enrollment/:id/seed', async (req, res) => {
+  const { seed } = req.body;
+  try {
+    const team = await updateTeamSeed(req.params.id, seed ?? null);
     if (!team) return res.status(404).json({ error: 'Team not found' });
     res.json(team);
   } catch (err) {

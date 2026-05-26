@@ -1,5 +1,5 @@
 const pool = require('../../db');
-const { buildBracketPlan } = require('../../utils/bracketUtils');
+const { buildBracketPlan, buildSeededBracket } = require('../../utils/bracketUtils');
 
 async function getApprovedTeams(tournament_id) {
   const { rows } = await pool.query(
@@ -47,19 +47,42 @@ async function scheduleMatch(id, match_date, venue) {
   return rows[0] || null;
 }
 
-async function generateBracket(tournament_id) {
+async function generateBracket(tournament_id, seeded = true) {
   const teams = await getApprovedTeams(tournament_id);
   if (teams.length < 2) throw new Error('Need at least 2 approved teams to generate a bracket');
 
-  // Fisher-Yates shuffle for random seeding
-  for (let i = teams.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [teams[i], teams[j]] = [teams[j], teams[i]];
+  const seededTeams   = teams.filter(t => t.seed != null);
+  const unseededTeams = teams.filter(t => t.seed == null);
+  const useSeeding    = seeded && seededTeams.length > 0;
+
+  let orderedTeams;
+  if (!useSeeding) {
+    // Fisher-Yates shuffle — pure random draw
+    orderedTeams = [...teams];
+    for (let i = orderedTeams.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [orderedTeams[i], orderedTeams[j]] = [orderedTeams[j], orderedTeams[i]];
+    }
+  } else if (unseededTeams.length === 0) {
+    // All teams seeded: sort by seed ASC
+    orderedTeams = [...teams].sort((a, b) => a.seed - b.seed);
+  } else {
+    // Mixed: seeded first (sorted), unseeded appended in random order
+    const sortedSeeded = [...seededTeams].sort((a, b) => a.seed - b.seed);
+    const shuffled = [...unseededTeams];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    orderedTeams = [...sortedSeeded, ...shuffled];
   }
 
   await clearTournamentMatches(tournament_id);
 
-  const plan = buildBracketPlan(teams);
+  const plan = useSeeding
+    ? buildSeededBracket(orderedTeams)
+    : buildBracketPlan(orderedTeams);
+
   const allMatches = [];
   for (const { round, team1_id, team2_id } of plan) {
     allMatches.push(await insertMatch(tournament_id, round, team1_id, team2_id));

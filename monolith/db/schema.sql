@@ -10,7 +10,8 @@ CREATE TABLE teams (
   tournament_id   INT REFERENCES tournament(id),
   name            VARCHAR(255),
   contact_email   VARCHAR(255),
-  status          VARCHAR(50) DEFAULT 'pending'
+  status          VARCHAR(50) DEFAULT 'pending',
+  seed            INT DEFAULT NULL
 );
 
 CREATE TABLE players (

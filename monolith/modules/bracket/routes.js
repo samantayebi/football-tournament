@@ -2,9 +2,9 @@ const router = require('express').Router();
 const { generateBracket, getBracket, scheduleMatch } = require('./queries');
 
 router.post('/bracket/generate', async (req, res) => {
-  const { tournament_id = 1 } = req.body;
+  const { tournament_id = 1, seeded = true } = req.body;
   try {
-    const matches = await generateBracket(tournament_id);
+    const matches = await generateBracket(tournament_id, seeded);
     res.status(201).json({ matches });
   } catch (err) {
     res.status(400).json({ error: err.message });
