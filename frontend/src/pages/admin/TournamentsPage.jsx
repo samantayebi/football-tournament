@@ -5,7 +5,7 @@ import api from '../../api';
 
 export default function TournamentsPage() {
   const { token } = useAuth();
-  const { setSelectedId } = useTournament();
+  const { setSelectedId, refreshTournaments } = useTournament();
   const authHeader = { Authorization: `Bearer ${token}` };
 
   const [tournaments, setTournaments] = useState([]);
@@ -30,9 +30,20 @@ export default function TournamentsPage() {
       );
       setForm({ name: '' });
       await fetchTournaments();
+      refreshTournaments();
       setSelectedId(data.id);
     } catch {
       setError('Failed to create tournament.');
+    }
+  }
+
+  async function handleArchive(id) {
+    try {
+      await api.patch(`/api/v1/admin/tournaments/${id}/archive`, {}, { headers: authHeader });
+      await fetchTournaments();
+      refreshTournaments();
+    } catch {
+      setError('Failed to archive tournament.');
     }
   }
 
@@ -63,19 +74,36 @@ export default function TournamentsPage() {
               <th>Name</th>
               <th>Format</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {tournaments.map(t => (
-              <tr key={t.id}>
+              <tr
+                key={t.id}
+                style={t.status === 'completed' ? { opacity: 0.55, color: 'var(--text-muted)' } : {}}
+              >
                 <td>{t.id}</td>
-                <td>{t.name}</td>
+                <td>
+                  {t.status === 'completed' && <span style={{ marginRight: 6 }}>🏆</span>}
+                  {t.name}
+                </td>
                 <td>{t.format}</td>
                 <td>{t.status}</td>
+                <td>
+                  {t.status !== 'completed' && (
+                    <button
+                      className="sm danger"
+                      onClick={() => handleArchive(t.id)}
+                    >
+                      Archive
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {tournaments.length === 0 && !error && (
-              <tr><td colSpan={4}>No tournaments yet.</td></tr>
+              <tr><td colSpan={5}>No tournaments yet.</td></tr>
             )}
           </tbody>
         </table>

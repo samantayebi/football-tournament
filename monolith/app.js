@@ -15,7 +15,7 @@ const results    = require('./modules/results');
 const reports    = require('./modules/reports');
 const tournament = require('./modules/tournament');
 const stats      = require('./modules/stats');
-const { getAllTournaments } = require('./modules/tournament/queries');
+const { getAllTournaments, getTournamentStats } = require('./modules/tournament/queries');
 const { getTopScorers }    = require('./modules/stats/queries');
 const { getReport }        = require('./modules/reports/queries');
 
@@ -66,6 +66,14 @@ app.use('/api/v1/admin', auth, results);
 app.use('/api/v1/admin', auth, reports);
 app.use('/api/v1/admin', auth, tournament);
 app.use('/api/v1/admin', auth, stats);
+
+app.get('/api/v1/public/tournament-stats/:id', async (req, res) => {
+  try {
+    res.json(await getTournamentStats(req.params.id));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.get('/api/v1/public/reports/:matchId', async (req, res) => {
   try {
