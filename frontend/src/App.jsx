@@ -39,6 +39,7 @@ function Navbar() {
         <NavLink to="/standings">Standings</NavLink>
         <NavLink to="/top-scorers">Top Scorers</NavLink>
         <NavLink to="/history">History</NavLink>
+        <a href="/api-docs">API Docs</a>
       </div>
       <div className="nav-right">
         {token ? (

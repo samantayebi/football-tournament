@@ -1,8 +1,10 @@
 require('dotenv').config();
-const express = require('express');
-const cors    = require('cors');
-const path    = require('path');
-const jwt     = require('jsonwebtoken');
+const express   = require('express');
+const cors      = require('cors');
+const path      = require('path');
+const jwt       = require('jsonwebtoken');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./utils/swagger');
 
 const pool       = require('./db');
 const logger     = require('./utils/logger');
@@ -26,6 +28,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use((req, _res, next) => {
   logger.info('incoming request', { method: req.method, url: req.url, ip: req.ip });
