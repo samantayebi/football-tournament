@@ -16,9 +16,11 @@ const results    = require('./modules/results');
 const reports    = require('./modules/reports');
 const tournament = require('./modules/tournament');
 const stats      = require('./modules/stats');
+const commentary = require('./modules/commentary');
 const { getAllTournaments, getTournamentStats } = require('./modules/tournament/queries');
 const { getTopScorers }    = require('./modules/stats/queries');
 const { getReport }        = require('./modules/reports/queries');
+const { getCommentary }    = require('./modules/commentary/queries');
 
 const app = express();
 
@@ -68,6 +70,7 @@ app.use('/api/v1/admin', auth, results);
 app.use('/api/v1/admin', auth, reports);
 app.use('/api/v1/admin', auth, tournament);
 app.use('/api/v1/admin', auth, stats);
+app.use('/api/v1/admin', auth, commentary);
 
 app.get('/api/v1/public/tournament-stats/:id', async (req, res) => {
   try {
@@ -100,6 +103,14 @@ app.get('/api/v1/public/top-scorers', async (req, res) => {
 app.get('/api/v1/public/tournaments', async (_req, res) => {
   try {
     res.json(await getAllTournaments());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/v1/public/matches/:matchId/commentary', async (req, res) => {
+  try {
+    res.json(await getCommentary(req.params.matchId));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

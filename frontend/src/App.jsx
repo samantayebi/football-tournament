@@ -13,6 +13,7 @@ import EnrollmentPage    from './pages/admin/EnrollmentPage';
 import BracketAdminPage  from './pages/admin/BracketAdminPage';
 import ResultEntryPage   from './pages/admin/ResultEntryPage';
 import TournamentsPage   from './pages/admin/TournamentsPage';
+import CommentaryPage    from './pages/admin/CommentaryPage';
 
 function Navbar() {
   const { token, logout }          = useAuth();
@@ -46,6 +47,7 @@ function Navbar() {
             <NavLink to="/admin/enrollment">Enrollment</NavLink>
             <NavLink to="/admin/bracket">Bracket Admin</NavLink>
             <NavLink to="/admin/results">Results</NavLink>
+            <NavLink to="/admin/commentary">Commentary</NavLink>
             <button onClick={logout}>Logout</button>
           </>
         ) : (
@@ -81,6 +83,7 @@ export default function App() {
               <Route path="/admin/enrollment"    element={<ProtectedRoute><EnrollmentPage /></ProtectedRoute>} />
               <Route path="/admin/bracket"       element={<ProtectedRoute><BracketAdminPage /></ProtectedRoute>} />
               <Route path="/admin/results"       element={<ProtectedRoute><ResultEntryPage /></ProtectedRoute>} />
+              <Route path="/admin/commentary"   element={<ProtectedRoute><CommentaryPage /></ProtectedRoute>} />
             </Routes>
           </main>
         </BrowserRouter>

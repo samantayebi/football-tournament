@@ -51,3 +51,12 @@ CREATE TABLE IF NOT EXISTS match_goals (
   minute     INT,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS match_commentary (
+  id         SERIAL PRIMARY KEY,
+  match_id   INT REFERENCES matches(id),
+  minute     INT,
+  text       TEXT NOT NULL,
+  type       VARCHAR(50) DEFAULT 'comment',
+  created_at TIMESTAMP DEFAULT NOW()
+);

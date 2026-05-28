@@ -6,14 +6,24 @@ import api from '../../api';
 
 const AUTO_PREFIX = 'Match completed.';
 
+const TYPE_EMOJIS = {
+  goal:         '⚽',
+  yellow_card:  '🟨',
+  red_card:     '🟥',
+  substitution: '🔄',
+  info:         'ℹ️',
+  comment:      '💬',
+};
+
 export default function ReportPage() {
   const { matchId }   = useParams();
   const { token }     = useAuth();
   const { selectedTournament } = useTournament();
 
-  const [report, setReport] = useState(null);
-  const [goals, setGoals]   = useState([]);
-  const [error, setError]   = useState('');
+  const [report, setReport]         = useState(null);
+  const [goals, setGoals]           = useState([]);
+  const [commentary, setCommentary] = useState([]);
+  const [error, setError]           = useState('');
 
   useEffect(() => {
     api.get(`/api/v1/public/reports/${matchId}`)
@@ -22,6 +32,10 @@ export default function ReportPage() {
 
     api.get(`/api/v1/admin/matches/${matchId}/goals`)
       .then(r => setGoals(r.data))
+      .catch(() => {});
+
+    api.get(`/api/v1/public/matches/${matchId}/commentary`)
+      .then(r => setCommentary(r.data))
       .catch(() => {});
   }, [matchId, token]);
 
@@ -71,6 +85,22 @@ export default function ReportPage() {
               ))}
             </tbody>
           </table>
+        </section>
+      )}
+      {commentary.length > 0 && (
+        <section style={{ marginTop: 32 }}>
+          <h2>Match Timeline</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {commentary.map(c => (
+              <div key={c.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', fontSize: 14 }}>
+                <span style={{ minWidth: 36, color: '#888', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
+                  {c.minute != null ? `${c.minute}'` : '—'}
+                </span>
+                <span style={{ fontSize: 18, lineHeight: 1 }}>{TYPE_EMOJIS[c.type] || '💬'}</span>
+                <span style={{ lineHeight: 1.4 }}>{c.text}</span>
+              </div>
+            ))}
+          </div>
         </section>
       )}
     </div>
